@@ -6,6 +6,20 @@
 <title>GhostRoom — Private Chat</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+
+// Load images via fetch to bypass ngrok interstitial
+const imgCache = {};
+async function loadNgrokImage(img, src){
+  if(imgCache[src]){ img.src=imgCache[src]; return; }
+  try{
+    const r = await fetch(src, {headers:{'ngrok-skip-browser-warning':'true'}});
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    imgCache[src] = url;
+    img.src = url;
+  } catch(e){ img.src=src; } // fallback
+}
+
 // ── LIGHTBOX ──
 function openLightbox(src){
   document.getElementById('lightbox-img').src = src;
@@ -567,7 +581,9 @@ function renderMsg(m){
   }else if(m.type==='image'){
     const vo=m.view_once&&S.vo;
     const imgSrc=`${API}${m.file_url}`;
-    inner=`<div class="img-wrap"${S.norc?' oncontextmenu="return false"':''}><img src="${imgSrc}" alt="photo" onclick="openLightbox('${imgSrc}')" style="cursor:pointer;"/>${vo?`<div class="vo-overlay" onclick="revealPhoto(this)"><span>👁</span><p>Tap to view once</p></div><div class="vo-badge">VIEW ONCE</div>`:''}</div>`;
+    const imgId='img-'+Math.random().toString(36).slice(2);
+    inner=`<div class="img-wrap"${S.norc?' oncontextmenu="return false"':''}><img id="${imgId}" src="" alt="photo" onclick="openLightbox('${imgSrc}')" style="cursor:pointer;min-width:80px;min-height:60px;background:var(--s2);border-radius:14px;"/>${vo?`<div class="vo-overlay" onclick="revealPhoto(this)"><span>👁</span><p>Tap to view once</p></div><div class="vo-badge">VIEW ONCE</div>`:''}</div>`;
+    setTimeout(()=>{const el=document.getElementById(imgId);if(el)loadNgrokImage(el,imgSrc);},50);
   }else{
     inner=`<div class="bubble">${esc(m.content)}</div>`;
   }
@@ -1115,6 +1131,20 @@ async function bootApp(urlRoom){
   } else {
     showScreen('landing');
   }
+}
+
+
+// Load images via fetch to bypass ngrok interstitial
+const imgCache = {};
+async function loadNgrokImage(img, src){
+  if(imgCache[src]){ img.src=imgCache[src]; return; }
+  try{
+    const r = await fetch(src, {headers:{'ngrok-skip-browser-warning':'true'}});
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    imgCache[src] = url;
+    img.src = url;
+  } catch(e){ img.src=src; } // fallback
 }
 
 // ── LIGHTBOX ──
