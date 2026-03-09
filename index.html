@@ -372,6 +372,8 @@ function goJoin(){showScreen('join');}
 
 // ── CREATE ──
 async function createRoom(){
+  if(!API) await loadServerURL();
+  if(!API){ toast('Cannot reach server — is server.py running?'); return; }
   try{
     const r=await fetch(`${API}/api/rooms`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
     if(!r.ok)throw new Error();
@@ -389,6 +391,8 @@ document.getElementById('enter-btn').addEventListener('click',()=>{
 
 // ── JOIN ──
 async function joinRoom(){
+  if(!API) await loadServerURL();
+  if(!API){ toast('Cannot reach server — is server.py running?'); return; }
   const rid=document.getElementById('join-id').value.trim();
   const al=document.getElementById('join-alias').value.trim();
   if(!rid){toast('Please enter a Room ID');return;}
