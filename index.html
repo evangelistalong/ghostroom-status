@@ -21,10 +21,25 @@ async function loadNgrokImage(img, src){
 }
 
 // ── LIGHTBOX ──
-function openLightbox(src){
-  document.getElementById('lightbox-img').src = src;
-  document.getElementById('lightbox-dl').href = src;
+async function openLightbox(src){
+  const img = document.getElementById('lightbox-img');
+  const dl = document.getElementById('lightbox-dl');
+  img.src = '';
+  dl.href = src;
   document.getElementById('lightbox').classList.add('open');
+  // Use cached blob URL if available, else fetch with ngrok header
+  if(imgCache[src]){
+    img.src = imgCache[src];
+  } else {
+    try{
+      const r = await fetch(src, {headers:{'ngrok-skip-browser-warning':'true'}});
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      imgCache[src] = url;
+      img.src = url;
+      dl.href = url;
+    } catch(e){ img.src = src; }
+  }
 }
 function closeLightbox(e){
   if(e.target===document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open');
@@ -1148,10 +1163,25 @@ async function loadNgrokImage(img, src){
 }
 
 // ── LIGHTBOX ──
-function openLightbox(src){
-  document.getElementById('lightbox-img').src = src;
-  document.getElementById('lightbox-dl').href = src;
+async function openLightbox(src){
+  const img = document.getElementById('lightbox-img');
+  const dl = document.getElementById('lightbox-dl');
+  img.src = '';
+  dl.href = src;
   document.getElementById('lightbox').classList.add('open');
+  // Use cached blob URL if available, else fetch with ngrok header
+  if(imgCache[src]){
+    img.src = imgCache[src];
+  } else {
+    try{
+      const r = await fetch(src, {headers:{'ngrok-skip-browser-warning':'true'}});
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      imgCache[src] = url;
+      img.src = url;
+      dl.href = url;
+    } catch(e){ img.src = src; }
+  }
 }
 function closeLightbox(e){
   if(e.target===document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open');
