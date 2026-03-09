@@ -5,94 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>GhostRoom — Private Chat</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
-
-// Load images via fetch to bypass ngrok interstitial
-const imgCache = {};
-async function loadNgrokImage(img, src){
-  if(imgCache[src]){ img.src=imgCache[src]; return; }
-  try{
-    const r = await fetch(src, {headers:{'ngrok-skip-browser-warning':'true'}});
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    imgCache[src] = url;
-    img.src = url;
-  } catch(e){ img.src=src; } // fallback
-}
-
-// ── LIGHTBOX ──
-async function openLightbox(src){
-  const img = document.getElementById('lightbox-img');
-  const dl = document.getElementById('lightbox-dl');
-  img.src = '';
-  dl.href = src;
-  document.getElementById('lightbox').classList.add('open');
-  // Use cached blob URL if available, else fetch with ngrok header
-  if(imgCache[src]){
-    img.src = imgCache[src];
-  } else {
-    try{
-      const r = await fetch(src, {headers:{'ngrok-skip-browser-warning':'true'}});
-      const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
-      imgCache[src] = url;
-      img.src = url;
-      dl.href = url;
-    } catch(e){ img.src = src; }
-  }
-}
-function closeLightbox(e){
-  if(e.target===document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open');
-}
-
-// ── DECOY SCREEN ──
-let decoyTapCount = 0;
-let decoyTapTimer = null;
-
-function showDecoy(){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('decoy').classList.add('active');
-  decoyTapCount = 0;
-}
-
-function decoyTap(){
-  // Secret: tap hidden area 5x fast to get back to real PIN screen
-  decoyTapCount++;
-  clearTimeout(decoyTapTimer);
-  decoyTapTimer = setTimeout(()=>{ decoyTapCount=0; }, 2000);
-  if(decoyTapCount>=5){
-    decoyTapCount=0;
-        showPinScreen('unlock', pinUnlockCallback);
-  }
-}
-
-
-// ── DECOY SCREEN ──
-let decoyTapCount = 0;
-let decoyTapTimer = null;
-
-function showDecoy(){
-  // Hide PIN screen
-  document.getElementById('pin-screen').style.display = 'none';
-  // Hide all other screens
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  // Show decoy
-  document.getElementById('decoy').style.display = 'flex';
-  decoyTapCount = 0;
-}
-
-function decoyTap(){
-  decoyTapCount++;
-  clearTimeout(decoyTapTimer);
-  decoyTapTimer = setTimeout(()=>{ decoyTapCount=0; }, 2000);
-  if(decoyTapCount>=5){
-    decoyTapCount=0;
-    document.getElementById('decoy').style.display = 'none';
-    showPinScreen('unlock', pinUnlockCallback);
-  }
-}
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--bg:#080810;--s1:#0f0f1a;--s2:#161625;--s3:#1e1e32;--border:#252540;--border2:#2e2e52;--accent:#00e5ff;--accent2:#ff3cac;--accent3:#7c5cfc;--text:#eeeef8;--muted:#5a5a7a;--muted2:#7a7a9a;--green:#00ffaa;--red:#ff4466;--yellow:#ffcc00;--own-bg:#0d1f2d;--own-border:rgba(0,229,255,0.2);--other-bg:#141420;--other-border:#252540;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -1242,28 +1155,6 @@ async function openLightbox(src){
 function closeLightbox(e){
   if(e.target===document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open');
 }
-
-// ── DECOY SCREEN ──
-let decoyTapCount = 0;
-let decoyTapTimer = null;
-
-function showDecoy(){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('decoy').classList.add('active');
-  decoyTapCount = 0;
-}
-
-function decoyTap(){
-  // Secret: tap hidden area 5x fast to get back to real PIN screen
-  decoyTapCount++;
-  clearTimeout(decoyTapTimer);
-  decoyTapTimer = setTimeout(()=>{ decoyTapCount=0; }, 2000);
-  if(decoyTapCount>=5){
-    decoyTapCount=0;
-        showPinScreen('unlock', pinUnlockCallback);
-  }
-}
-
 
 // ── DECOY SCREEN ──
 let decoyTapCount = 0;
