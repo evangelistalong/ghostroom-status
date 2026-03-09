@@ -656,9 +656,18 @@ function pinDel(){
 
 function pinSubmit(){
   if(pinMode==='set'){
-    pinSetFirst=pinEntry;
+    pinSetFirst=pinEntry; // save first entry
+    const savedCallback=pinUnlockCallback; // save callback before showPinScreen resets it
+    pinMode='confirm';
     pinEntry='';
-    showPinScreen('confirm', pinUnlockCallback);
+    const title=document.getElementById('pin-title');
+    const sub=document.getElementById('pin-sub');
+    const forgot=document.getElementById('pin-forgot');
+    title.textContent='Confirm PIN';
+    sub.textContent='Enter your PIN again to confirm';
+    forgot.style.display='none';
+    updatePinDots();
+    pinUnlockCallback=savedCallback;
   } else if(pinMode==='confirm'){
     if(pinEntry===pinSetFirst){
       localStorage.setItem('gr_pin_hash', hashPin(pinEntry));
@@ -667,7 +676,16 @@ function pinSubmit(){
       if(pinUnlockCallback) pinUnlockCallback();
     } else {
       pinError('PINs do not match — try again');
-      setTimeout(()=>showPinScreen('set', pinUnlockCallback), 800);
+      setTimeout(()=>{
+        pinSetFirst='';
+        pinMode='set';
+        pinEntry='';
+        const title=document.getElementById('pin-title');
+        const sub=document.getElementById('pin-sub');
+        title.textContent='Set a PIN';
+        sub.textContent='Choose a 4-digit PIN to protect your GhostRoom';
+        updatePinDots();
+      }, 800);
     }
   } else {
     // unlock mode
