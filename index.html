@@ -44,6 +44,28 @@ async function openLightbox(src){
 function closeLightbox(e){
   if(e.target===document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open');
 }
+
+// ── DECOY SCREEN ──
+let decoyTapCount = 0;
+let decoyTapTimer = null;
+
+function showDecoy(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('decoy').classList.add('active');
+  decoyTapCount = 0;
+}
+
+function decoyTap(){
+  // Secret: tap hidden area 5x fast to get back to real PIN screen
+  decoyTapCount++;
+  clearTimeout(decoyTapTimer);
+  decoyTapTimer = setTimeout(()=>{ decoyTapCount=0; }, 2000);
+  if(decoyTapCount>=5){
+    decoyTapCount=0;
+        showPinScreen('unlock', pinUnlockCallback);
+  }
+}
+
 </script>
 <style>
 :root{--bg:#080810;--s1:#0f0f1a;--s2:#161625;--s3:#1e1e32;--border:#252540;--border2:#2e2e52;--accent:#00e5ff;--accent2:#ff3cac;--accent3:#7c5cfc;--text:#eeeef8;--muted:#5a5a7a;--muted2:#7a7a9a;--green:#00ffaa;--red:#ff4466;--yellow:#ffcc00;--own-bg:#0d1f2d;--own-border:rgba(0,229,255,0.2);--other-bg:#141420;--other-border:#252540;}
@@ -904,7 +926,8 @@ function pinSubmit(){
     if(hashPin(pinEntry)===localStorage.getItem('gr_pin_hash')){
       pinSuccess();
     } else {
-      pinError('Wrong PIN');
+      // Wrong PIN — silently show decoy, no hint given
+      setTimeout(showDecoy, 300);
     }
   }
 }
@@ -933,9 +956,16 @@ function pinSuccess(){
 }
 
 function pinForgot(){
-  if(confirm('Reset PIN? You will need to set a new one.\n\nThis does NOT remove you from your room.')){
+  if(confirm('Reset PIN?\n\nFor your security, ALL saved rooms and sessions will be cleared. You will need to rejoin rooms manually.')){
+    // Wipe everything — sessions, rooms, PIN
     localStorage.removeItem('gr_pin_hash');
-    showPinScreen('set', pinUnlockCallback);
+    localStorage.removeItem('gr_session');
+    localStorage.removeItem('gr_my_rooms');
+    // Reset state
+    room=null; pid=null; alias=null; myColor=null; isCreator=false;
+    if(ws){ ws.close(); ws=null; }
+    // Set new PIN, then go to clean landing
+    showPinScreen('set', ()=>{ renderMyRooms(); showScreen('landing'); });
   }
 }
 
@@ -1186,6 +1216,28 @@ async function openLightbox(src){
 function closeLightbox(e){
   if(e.target===document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open');
 }
+
+// ── DECOY SCREEN ──
+let decoyTapCount = 0;
+let decoyTapTimer = null;
+
+function showDecoy(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('decoy').classList.add('active');
+  decoyTapCount = 0;
+}
+
+function decoyTap(){
+  // Secret: tap hidden area 5x fast to get back to real PIN screen
+  decoyTapCount++;
+  clearTimeout(decoyTapTimer);
+  decoyTapTimer = setTimeout(()=>{ decoyTapCount=0; }, 2000);
+  if(decoyTapCount>=5){
+    decoyTapCount=0;
+        showPinScreen('unlock', pinUnlockCallback);
+  }
+}
+
 </script>
 
 <!-- LIGHTBOX -->
@@ -1193,6 +1245,51 @@ function closeLightbox(e){
   <button class="lightbox-close" onclick="document.getElementById('lightbox').classList.remove('open')">✕</button>
   <img id="lightbox-img" src="" alt="photo"/>
   <a class="lightbox-dl" id="lightbox-dl" href="" download target="_blank">⬇ Save Photo</a>
+</div>
+
+<!-- DECOY SCREEN -->
+<div id="decoy" class="screen" style="background:#f2f2f7;color:#1c1c1e;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="background:#fff;border-bottom:1px solid #e5e5ea;padding:52px 20px 12px;display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:1.1rem;font-weight:600;color:#1c1c1e;">Notes</span>
+    <span style="font-size:.88rem;color:#007aff;cursor:pointer;">New +</span>
+  </div>
+  <div style="padding:0 0 12px;">
+    <div style="background:#fff;border-bottom:1px solid #e5e5ea;padding:16px 20px;display:flex;gap:14px;align-items:center;">
+      <div style="width:40px;height:40px;background:#ffcc00;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📝</div>
+      <div style="flex:1;">
+        <div style="font-size:.92rem;font-weight:600;">Grocery List</div>
+        <div style="font-size:.78rem;color:#8e8e93;margin-top:2px;">Milk, eggs, bread, butter...</div>
+      </div>
+      <div style="font-size:.72rem;color:#8e8e93;">Yesterday</div>
+    </div>
+    <div style="background:#fff;border-bottom:1px solid #e5e5ea;padding:16px 20px;display:flex;gap:14px;align-items:center;">
+      <div style="width:40px;height:40px;background:#34c759;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">💡</div>
+      <div style="flex:1;">
+        <div style="font-size:.92rem;font-weight:600;">Ideas</div>
+        <div style="font-size:.78rem;color:#8e8e93;margin-top:2px;">App concept, travel plans...</div>
+      </div>
+      <div style="font-size:.72rem;color:#8e8e93;">Mon</div>
+    </div>
+    <div style="background:#fff;border-bottom:1px solid #e5e5ea;padding:16px 20px;display:flex;gap:14px;align-items:center;">
+      <div style="width:40px;height:40px;background:#007aff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📋</div>
+      <div style="flex:1;">
+        <div style="font-size:.92rem;font-weight:600;">Work Tasks</div>
+        <div style="font-size:.78rem;color:#8e8e93;margin-top:2px;">Q2 review, team meeting...</div>
+      </div>
+      <div style="font-size:.72rem;color:#8e8e93;">Sun</div>
+    </div>
+    <div style="background:#fff;padding:16px 20px;display:flex;gap:14px;align-items:center;">
+      <div style="width:40px;height:40px;background:#ff9500;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">🎯</div>
+      <div style="flex:1;">
+        <div style="font-size:.92rem;font-weight:600;">Goals 2026</div>
+        <div style="font-size:.78rem;color:#8e8e93;margin-top:2px;">Exercise, reading, savings...</div>
+      </div>
+      <div style="font-size:.72rem;color:#8e8e93;">12/28</div>
+    </div>
+  </div>
+  <div style="padding:0 20px;color:#8e8e93;font-size:.78rem;text-align:center;margin-top:8px;">4 Notes</div>
+  <!-- Secret tap area — tap logo 5x to get back to real PIN -->
+  <div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:48px;height:48px;opacity:0;" id="decoy-escape" onclick="decoyTap()"></div>
 </div>
 </body>
 </html>
