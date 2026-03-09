@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GhostRoom — My Server</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#080810;--s1:#0f0f1a;--s2:#161625;--border:#252540;--border2:#2e2e52;--accent:#00e5ff;--accent3:#7c5cfc;--text:#eeeef8;--muted:#5a5a7a;--muted2:#7a7a9a;--green:#00ffaa;--red:#ff4466;--yellow:#ffcc00;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden;}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;}
+.bg-glow{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;}
+.bg-glow-1{width:400px;height:400px;background:rgba(0,229,255,.06);top:-150px;left:-150px;}
+.bg-glow-2{width:300px;height:300px;background:rgba(124,92,252,.06);bottom:-100px;right:-100px;}
+.card{position:relative;z-index:1;background:var(--s1);border:1px solid var(--border2);border-radius:28px;padding:36px 32px;width:100%;max-width:420px;box-shadow:0 30px 80px rgba(0,0,0,.5);text-align:center;}
+.logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px;}
+.logo-icon{width:44px;height:44px;background:linear-gradient(135deg,rgba(0,229,255,.15),rgba(124,92,252,.15));border:1px solid rgba(0,229,255,.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+.logo-text{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.status-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:100px;font-size:.82rem;font-weight:600;margin-bottom:24px;transition:all .3s;}
+.status-badge.checking{background:rgba(255,204,0,.1);border:1px solid rgba(255,204,0,.25);color:var(--yellow);}
+.status-badge.online{background:rgba(0,255,170,.1);border:1px solid rgba(0,255,170,.25);color:var(--green);}
+.status-badge.offline{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.25);color:var(--red);}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.status-badge.checking .status-dot{background:var(--yellow);animation:blink 1s infinite;}
+.status-badge.online .status-dot{background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2s infinite;}
+.status-badge.offline .status-dot{background:var(--red);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.url-section{margin-bottom:24px;}
+.url-label{font-size:.72rem;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:8px;}
+.url-box{background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:10px;text-align:left;}
+.url-text{flex:1;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--accent);word-break:break-all;line-height:1.4;}
+.url-text.placeholder{color:var(--muted);font-family:'Outfit',sans-serif;font-size:.85rem;font-style:italic;}
+.copy-btn{background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:8px 14px;font-size:.78rem;font-family:'Outfit',sans-serif;color:var(--accent);cursor:pointer;white-space:nowrap;transition:all .15s;font-weight:600;flex-shrink:0;}
+.copy-btn:hover{background:rgba(0,229,255,.2);}
+.copy-btn:disabled{opacity:.4;cursor:not-allowed;}
+.updated-time{font-size:.7rem;color:var(--muted);margin-top:6px;text-align:right;}
+.qr-section{margin-bottom:24px;}
+.qr-wrap{background:#fff;border-radius:18px;padding:16px;display:inline-flex;margin-bottom:10px;box-shadow:0 4px 24px rgba(0,229,255,.1);}
+.qr-hint{font-size:.75rem;color:var(--muted2);}
+.open-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;background:linear-gradient(135deg,rgba(0,229,255,.15),rgba(0,229,255,.08));border:1px solid rgba(0,229,255,.35);border-radius:14px;color:var(--accent);font-size:.95rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;text-decoration:none;transition:all .2s;margin-bottom:12px;}
+.open-btn:hover{box-shadow:0 0 24px rgba(0,229,255,.2);transform:translateY(-1px);}
+.open-btn.disabled{opacity:.4;pointer-events:none;}
+.refresh-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:14px;color:var(--muted2);font-size:.88rem;font-weight:500;font-family:'Outfit',sans-serif;cursor:pointer;transition:all .2s;}
+.refresh-btn:hover{background:#1e1e32;border-color:var(--border2);color:var(--text);}
+.divider{height:1px;background:var(--border);margin:20px 0;}
+.setup-section{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:18px;text-align:left;}
+.setup-section h4{font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:12px;}
+.setup-input-group{margin-bottom:10px;}
+.setup-input-group label{font-size:.7rem;color:var(--muted2);display:block;margin-bottom:5px;letter-spacing:.08em;text-transform:uppercase;}
+.setup-input{width:100%;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:.85rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s;}
+.setup-input:focus{border-color:rgba(0,229,255,.4);}
+.setup-input::placeholder{color:var(--muted);font-family:'Outfit',sans-serif;font-size:.82rem;}
+.save-btn{width:100%;padding:11px;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.2);border-radius:10px;color:var(--accent);font-size:.85rem;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;transition:all .15s;margin-top:4px;}
+.save-btn:hover{background:rgba(0,229,255,.2);}
+.footer{margin-top:16px;font-size:.72rem;color:var(--muted);text-align:center;line-height:1.8;}
+.footer a{color:var(--muted2);text-decoration:none;}
+.footer a:hover{color:var(--accent);}
+.spin{animation:spin .8s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:10px 20px;font-size:.82rem;color:var(--text);opacity:0;transition:all .25s;z-index:400;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">👻</div>
+    <div class="logo-text">GhostRoom</div>
+  </div>
+  <div class="status-badge checking" id="status-badge">
+    <div class="status-dot"></div>
+    <span id="status-text">Checking server…</span>
+  </div>
+  <div class="url-section">
+    <div class="url-label">Current Public URL</div>
+    <div class="url-box">
+      <div class="url-text placeholder" id="url-display">Loading…</div>
+      <button class="copy-btn" id="copy-btn" onclick="copyURL()" disabled>Copy</button>
+    </div>
+    <div class="updated-time" id="updated-time"></div>
+  </div>
+  <div class="qr-section" id="qr-section" style="display:none;">
+    <div class="url-label">Scan to Join</div>
+    <div class="qr-wrap"><div id="qrcode"></div></div>
+    <div class="qr-hint">Anyone scans this to join instantly — no app needed</div>
+  </div>
+  <a class="open-btn disabled" id="open-btn" href="#" target="_blank"><span>🚀</span> Open GhostRoom</a>
+  <button class="refresh-btn" onclick="checkServer()"><span id="refresh-icon">🔄</span> Refresh</button>
+  <div class="divider"></div>
+  <div class="setup-section">
+    <h4>⚙️ GitHub Settings</h4>
+    <div class="setup-input-group">
+      <label>GitHub Username</label>
+      <input class="setup-input" id="gh-user" placeholder="your_github_username"/>
+    </div>
+    <div class="setup-input-group">
+      <label>Repository Name</label>
+      <input class="setup-input" id="gh-repo" placeholder="ghostroom-status"/>
+    </div>
+    <button class="save-btn" onclick="saveSettings()">💾 Save & Connect</button>
+  </div>
+  <div class="footer">
+    URL auto-updates when your server restarts<br>
+    Your data stays on your own machine · 24h auto-delete<br>
+    <a href="https://pages.github.com" target="_blank">Host this free on GitHub Pages →</a>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let currentURL=null;
+function loadSettings(){
+  document.getElementById('gh-user').value=localStorage.getItem('gh_user')||'';
+  document.getElementById('gh-repo').value=localStorage.getItem('gh_repo')||'ghostroom-status';
+  return{user:localStorage.getItem('gh_user')||'',repo:localStorage.getItem('gh_repo')||'ghostroom-status'};
+}
+function saveSettings(){
+  const user=document.getElementById('gh-user').value.trim();
+  const repo=document.getElementById('gh-repo').value.trim();
+  if(!user){toast('Please enter your GitHub username');return;}
+  localStorage.setItem('gh_user',user);
+  localStorage.setItem('gh_repo',repo);
+  toast('Settings saved!');
+  checkServer();
+}
+async function checkServer(){
+  const{user,repo}=loadSettings();
+  setStatus('checking','Checking server…');
+  document.getElementById('refresh-icon').classList.add('spin');
+  if(!user){
+    setStatus('offline','Enter your GitHub username below');
+    document.getElementById('url-display').textContent='Enter your GitHub settings below to connect';
+    document.getElementById('url-display').classList.add('placeholder');
+    document.getElementById('refresh-icon').classList.remove('spin');
+    return;
+  }
+  try{
+    const rawUrl=`https://raw.githubusercontent.com/${user}/${repo}/main/url.json?t=${Date.now()}`;
+    const res=await fetch(rawUrl,{signal:AbortSignal.timeout(8000)});
+    if(!res.ok)throw new Error(`GitHub returned ${res.status}`);
+    const data=await res.json();
+    const url=data.url;
+    const updated=data.updated;
+    if(!url)throw new Error('No URL in file');
+    setOnline(url,updated);
+  }catch(e){
+    console.error(e);
+    setStatus('offline','Server offline or URL not published yet');
+    setOffline(e.message);
+  }
+  document.getElementById('refresh-icon').classList.remove('spin');
+}
+function setOnline(url,updated){
+  currentURL=url;
+  setStatus('online','Server is online ✓');
+  const display=document.getElementById('url-display');
+  display.textContent=url;
+  display.classList.remove('placeholder');
+  if(updated){
+    const d=new Date(updated);
+    document.getElementById('updated-time').textContent=`Last updated: ${d.toLocaleDateString()} at ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
+  }
+  document.getElementById('copy-btn').disabled=false;
+  const btn=document.getElementById('open-btn');
+  btn.href=url;
+  btn.classList.remove('disabled');
+  document.getElementById('qr-section').style.display='block';
+  const qrEl=document.getElementById('qrcode');
+  qrEl.innerHTML='';
+  new QRCode(qrEl,{text:url,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+}
+function setOffline(reason){
+  currentURL=null;
+  const display=document.getElementById('url-display');
+  display.textContent=reason||'Server is offline';
+  display.classList.add('placeholder');
+  document.getElementById('copy-btn').disabled=true;
+  document.getElementById('updated-time').textContent='';
+  const btn=document.getElementById('open-btn');
+  btn.href='#';
+  btn.classList.add('disabled');
+  document.getElementById('qr-section').style.display='none';
+}
+function setStatus(type,text){
+  const badge=document.getElementById('status-badge');
+  badge.className='status-badge '+type;
+  document.getElementById('status-text').textContent=text;
+}
+function copyURL(){
+  if(!currentURL)return;
+  navigator.clipboard.writeText(currentURL).then(()=>toast('URL copied! 📋')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=currentURL;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('URL copied! 📋');
+  });
+}
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);
+}
+window.addEventListener('load',()=>{
+  loadSettings();
+  const{user}=loadSettings();
+  if(user)checkServer();
+  else setStatus('offline','Enter your GitHub username below');
+});
+setInterval(checkServer,60000);
+</script>
+</body>
+</html>
