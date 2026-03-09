@@ -156,12 +156,6 @@ input[type="file"]{display:none;}
 .toggle.on{background:rgba(0,229,255,.2);border-color:rgba(0,229,255,.4);}
 .tthumb{position:absolute;top:2px;left:2px;width:18px;height:18px;background:var(--muted2);border-radius:50%;transition:all .2s;}
 .toggle.on .tthumb{left:22px;background:var(--accent);box-shadow:0 0 8px rgba(0,229,255,.5);}
-/* EXPIRY GRID */
-.expiry-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:20px 0 12px;}
-.expiry-btn{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;font-size:.85rem;font-weight:600;color:var(--muted2);cursor:pointer;font-family:'Outfit',sans-serif;transition:all .15s;}
-.expiry-btn:hover{background:var(--s3);border-color:var(--border2);color:var(--text);}
-.expiry-btn.selected{background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.4);color:var(--accent);}
-.expiry-note{font-size:.75rem;color:var(--muted2);text-align:center;min-height:1.2em;}
 /* TOAST */
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:10px 20px;font-size:.82rem;color:var(--text);opacity:0;transition:all .25s;z-index:400;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -169,58 +163,9 @@ input[type="file"]{display:none;}
 .connecting{display:flex;align-items:center;justify-content:center;flex:1;flex-direction:column;gap:16px;}
 .spinner{width:40px;height:40px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-/* PIN SCREEN */
-.pin-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:32px 24px;}
-.pin-screen.visible{display:flex;}
-.pin-logo{font-size:2.5rem;margin-bottom:12px;}
-.pin-title{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:6px;}
-.pin-sub{font-size:.82rem;color:var(--muted2);margin-bottom:36px;text-align:center;line-height:1.5;}
-.pin-dots{display:flex;gap:14px;margin-bottom:36px;}
-.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all .15s;}
-.pin-dot.filled{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px rgba(0,229,255,.4);}
-.pin-dot.error{background:var(--red);border-color:var(--red);box-shadow:0 0 10px rgba(255,68,102,.4);}
-.pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:12px;margin-bottom:24px;}
-.pin-key{width:72px;height:72px;background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:1.4rem;font-weight:600;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;transition:all .12s;-webkit-tap-highlight-color:transparent;user-select:none;}
-.pin-key:hover{background:var(--s3);border-color:var(--border2);}
-.pin-key:active{transform:scale(.92);background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.3);}
-.pin-key.del{font-size:1.1rem;color:var(--muted2);}
-.pin-key.empty{opacity:0;pointer-events:none;}
-.pin-forgot{font-size:.75rem;color:var(--muted);cursor:pointer;text-decoration:underline;margin-top:4px;}
-.pin-forgot:hover{color:var(--muted2);}
-@keyframes pinShake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-8px);}40%,80%{transform:translateX(8px);}}
-.pin-dots.shake{animation:pinShake .4s ease;}
-@keyframes pinSuccess{0%{transform:scale(1);}50%{transform:scale(1.15);}100%{transform:scale(1);}}
 </style>
 </head>
 <body>
-
-<!-- PIN SCREEN -->
-<div class="pin-screen" id="pin-screen">
-  <div class="pin-logo">👻</div>
-  <div class="pin-title" id="pin-title">Enter PIN</div>
-  <div class="pin-sub" id="pin-sub">Enter your GhostRoom PIN to continue</div>
-  <div class="pin-dots" id="pin-dots">
-    <div class="pin-dot" id="pd0"></div>
-    <div class="pin-dot" id="pd1"></div>
-    <div class="pin-dot" id="pd2"></div>
-    <div class="pin-dot" id="pd3"></div>
-  </div>
-  <div class="pin-pad">
-    <button class="pin-key" onclick="pinPress('1')">1</button>
-    <button class="pin-key" onclick="pinPress('2')">2</button>
-    <button class="pin-key" onclick="pinPress('3')">3</button>
-    <button class="pin-key" onclick="pinPress('4')">4</button>
-    <button class="pin-key" onclick="pinPress('5')">5</button>
-    <button class="pin-key" onclick="pinPress('6')">6</button>
-    <button class="pin-key" onclick="pinPress('7')">7</button>
-    <button class="pin-key" onclick="pinPress('8')">8</button>
-    <button class="pin-key" onclick="pinPress('9')">9</button>
-    <button class="pin-key empty"></button>
-    <button class="pin-key" onclick="pinPress('0')">0</button>
-    <button class="pin-key del" onclick="pinDel()">⌫</button>
-  </div>
-  <div class="pin-forgot" id="pin-forgot" onclick="pinForgot()">Forgot PIN?</div>
-</div>
 
 <!-- LANDING -->
 <div id="landing" class="screen active">
@@ -242,7 +187,7 @@ input[type="file"]{display:none;}
       <div class="pill"><span class="pill-dot" style="background:#ffcc00"></span>View-once</div>
     </div>
     <div class="landing-btns">
-      <button class="btn-p" onclick="openCreateModal()"><span>🔮</span> Create Private Room</button>
+      <button class="btn-p" onclick="createRoom()"><span>🔮</span> Create Private Room</button>
       <button class="btn-s" onclick="goJoin()"><span>🔗</span> Join with Room ID</button>
     </div>
   </div>
@@ -285,10 +230,8 @@ input[type="file"]{display:none;}
     </div>
     <div class="ha">
       <button class="hbtn" onclick="showQR()" title="Share QR">📱</button>
-      <button class="hbtn" id="expiry-btn" onclick="openExpiryModal()" title="Change Expiry" style="display:none;">⏱️</button>
       <button class="hbtn" onclick="openSettings()" title="Privacy">🛡️</button>
       <button class="hbtn" onclick="openPanel()" title="Participants">👥</button>
-      <button class="hbtn" onclick="leaveRoom()" title="Leave Room" style="color:#ff4466;">🚪</button>
     </div>
   </div>
   <div class="messages-area" id="msgs"></div>
@@ -307,46 +250,6 @@ input[type="file"]{display:none;}
   </div>
 </div>
 
-<!-- CREATE ROOM MODAL -->
-<div class="modal-bg" id="create-modal">
-  <div class="modal-box">
-    <button class="mcl" onclick="closeModal('create-modal')">✕</button>
-    <h2>Create Private Room 🔮</h2>
-    <p>Choose how long this room stays active</p>
-    <div class="expiry-grid" id="expiry-grid">
-      <button class="expiry-btn" data-seconds="3600" onclick="selectExpiry(this)">1 hour</button>
-      <button class="expiry-btn" data-seconds="21600" onclick="selectExpiry(this)">6 hours</button>
-      <button class="expiry-btn selected" data-seconds="86400" onclick="selectExpiry(this)">24 hours</button>
-      <button class="expiry-btn" data-seconds="259200" onclick="selectExpiry(this)">3 days</button>
-      <button class="expiry-btn" data-seconds="604800" onclick="selectExpiry(this)">7 days</button>
-      <button class="expiry-btn" data-seconds="2592000" onclick="selectExpiry(this)">30 days</button>
-      <button class="expiry-btn" data-seconds="99999999" onclick="selectExpiry(this)" style="grid-column:span 3;">👻 Forever</button>
-    </div>
-    <div class="expiry-note" id="expiry-note">Room and all messages deleted after 24 hours</div>
-    <button class="btn-p w100 mt12" onclick="createRoom()">Create Room →</button>
-  </div>
-</div>
-
-<!-- CHANGE EXPIRY MODAL -->
-<div class="modal-bg" id="expiry-modal">
-  <div class="modal-box">
-    <button class="mcl" onclick="closeModal('expiry-modal')">✕</button>
-    <h2>⏱️ Change Room Expiry</h2>
-    <p>Only you (the creator) can change this</p>
-    <div class="expiry-grid">
-      <button class="expiry-btn" data-seconds="3600" onclick="selectNewExpiry(this)">1 hour</button>
-      <button class="expiry-btn" data-seconds="21600" onclick="selectNewExpiry(this)">6 hours</button>
-      <button class="expiry-btn" data-seconds="86400" onclick="selectNewExpiry(this)">24 hours</button>
-      <button class="expiry-btn" data-seconds="259200" onclick="selectNewExpiry(this)">3 days</button>
-      <button class="expiry-btn" data-seconds="604800" onclick="selectNewExpiry(this)">7 days</button>
-      <button class="expiry-btn" data-seconds="2592000" onclick="selectNewExpiry(this)">30 days</button>
-      <button class="expiry-btn" data-seconds="99999999" onclick="selectNewExpiry(this)" style="grid-column:span 3;">👻 Forever</button>
-    </div>
-    <div class="expiry-note" id="new-expiry-note">Select a new duration — timer resets from now</div>
-    <button class="btn-p w100 mt12" onclick="applyNewExpiry()">Apply Change →</button>
-  </div>
-</div>
-
 <!-- QR MODAL -->
 <div class="modal-bg" id="qr-modal">
   <div class="modal-box">
@@ -360,7 +263,7 @@ input[type="file"]{display:none;}
     </div>
     <div class="ptags">
       <span class="ptag">🔒 Anonymous</span>
-      <span class="ptag" id="expiry-tag">⏱ 24hr delete</span>
+      <span class="ptag">⏱ 24hr delete</span>
       <span class="ptag">📵 No account</span>
       <span class="ptag">👻 No trace</span>
     </div>
@@ -375,7 +278,6 @@ input[type="file"]{display:none;}
     <div class="srow"><div class="sinfo"><h4>Screen Lock on Focus Loss</h4><p>Blurs chat when you switch apps or lock phone</p></div><div class="toggle on" id="t-blur" onclick="toggleS('blur')"><div class="tthumb"></div></div></div>
     <div class="srow"><div class="sinfo"><h4>View-Once Photos</h4><p>Photos hidden until tapped, then disappear</p></div><div class="toggle on" id="t-vo" onclick="toggleS('vo')"><div class="tthumb"></div></div></div>
     <div class="srow"><div class="sinfo"><h4>Disable Image Long-Press Save</h4><p>Prevents easy right-click / long-press saving</p></div><div class="toggle on" id="t-norc" onclick="toggleS('norc')"><div class="tthumb"></div></div></div>
-    <div class="srow"><div class="sinfo"><h4>Change GhostRoom PIN</h4><p>Update your 4-digit app PIN</p></div><button onclick="closeModal('smodal');showPinScreen('set',()=>{})" style="background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:7px 14px;font-size:.78rem;color:var(--accent);cursor:pointer;font-weight:600;font-family:'Outfit',sans-serif;">Change</button></div>
     <button class="btn-s w100 mt12" onclick="closeModal('smodal')">Close</button>
   </div>
 </div>
@@ -390,24 +292,10 @@ input[type="file"]{display:none;}
 <div class="toast" id="toast"></div>
 
 <script>
-let API = null;
-let WS  = null;
+const API = window.location.origin;
+const WS  = API.replace(/^http/,'ws');
 
-// Load server URL from GitHub url.json
-async function loadServerURL(){
-  try{
-    const r = await fetch('https://raw.githubusercontent.com/evangelistalong/ghostroom-status/main/url.json?t='+Date.now());
-    const d = await r.json();
-    API = d.url.replace(/\/$/, '');
-    WS  = API.replace(/^http/,'ws');
-    console.log('Server URL loaded:', API);
-  } catch(e){
-    console.error('Could not load server URL:', e);
-    toast('Cannot reach server — is server.py running?');
-  }
-}
-
-let room=null,pid=null,alias=null,myColor=null,isCreator=false;
+let room=null,pid=null,alias=null,myColor=null;
 let ws=null,attachedFile=null;
 let qrDone=false,pqrDone=false;
 let typingShown={};
@@ -417,56 +305,25 @@ const S={blur:true,vo:true,norc:true};
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 function goJoin(){showScreen('join');}
 
-// ── CREATE MODAL ──
-let selectedExpiry = 86400;
-const expiryLabels = {
-  3600:'Room and all messages deleted after 1 hour',
-  21600:'Room and all messages deleted after 6 hours',
-  86400:'Room and all messages deleted after 24 hours',
-  259200:'Room and all messages deleted after 3 days',
-  604800:'Room and all messages deleted after 7 days',
-  2592000:'Room and all messages deleted after 30 days',
-  99999999:'Room never expires — messages stay until manually deleted 👻'
-};
-
-function openCreateModal(){
-  closeModal('create-modal');
-  document.getElementById('create-modal').classList.add('open');
-}
-
-function selectExpiry(btn){
-  document.querySelectorAll('.expiry-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
-  selectedExpiry = parseInt(btn.dataset.seconds);
-  document.getElementById('expiry-note').textContent = expiryLabels[selectedExpiry];
-}
-
 // ── CREATE ──
 async function createRoom(){
-  if(!API) await loadServerURL();
-  if(!API){ toast('Cannot reach server — is server.py running?'); return; }
-  closeModal('create-modal');
   try{
-    const r=await fetch(`${API}/api/rooms`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expires_in:selectedExpiry})});
+    const r=await fetch(`${API}/api/rooms`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
     if(!r.ok)throw new Error();
     const d=await r.json();
-    room=d.room_id;pid=d.participant_id;alias=d.alias;myColor=d.color;secondsLeft=selectedExpiry;isCreator=true;
+    room=d.room_id;pid=d.participant_id;alias=d.alias;myColor=d.color;secondsLeft=86400;
     document.getElementById('modal-rid').textContent=room;
-    const expiryLabels2={3600:'1hr delete',21600:'6hr delete',86400:'24hr delete',259200:'3d delete',604800:'7d delete',2592000:'30d delete',99999999:'Forever 👻'};
-    document.getElementById('expiry-tag').textContent='⏱ '+(expiryLabels2[selectedExpiry]||'24hr delete');
     buildQR('qr-container');qrDone=true;
     document.getElementById('qr-modal').classList.add('open');
   }catch{toast('Cannot reach server — is server.py running?');}
 }
 
 document.getElementById('enter-btn').addEventListener('click',()=>{
-  if(room&&pid){closeModal('qr-modal');showScreen('chat');initChat([]);saveSession();connectWS();}
+  if(room&&pid){closeModal('qr-modal');showScreen('chat');initChat([]);connectWS();}
 });
 
 // ── JOIN ──
 async function joinRoom(){
-  if(!API) await loadServerURL();
-  if(!API){ toast('Cannot reach server — is server.py running?'); return; }
   const rid=document.getElementById('join-id').value.trim();
   const al=document.getElementById('join-alias').value.trim();
   if(!rid){toast('Please enter a Room ID');return;}
@@ -478,8 +335,8 @@ async function joinRoom(){
     if(r.status===410){toast('This room has expired');showScreen('landing');return;}
     if(!r.ok)throw new Error();
     const d=await r.json();
-    room=d.room_id;pid=d.participant_id;alias=d.alias;myColor=d.color;secondsLeft=d.seconds_left;isCreator=d.is_creator||false;
-    initChat(d.history);saveSession();connectWS();
+    room=d.room_id;pid=d.participant_id;alias=d.alias;myColor=d.color;secondsLeft=d.seconds_left;
+    initChat(d.history);connectWS();
   }catch(e){toast('Cannot reach server — is server.py running?');showScreen('landing');}
 }
 
@@ -488,12 +345,10 @@ function initChat(history){
   document.getElementById('room-orb').textContent=room.slice(0,2).toUpperCase();
   document.getElementById('room-name-h').textContent=room;
   document.getElementById('modal-rid').textContent=room;
-  // Show expiry button only for creator
-  document.getElementById('expiry-btn').style.display=isCreator?'':'none';
   const area=document.getElementById('msgs');
   area.innerHTML='<div class="sys-msg">Room active · Messages auto-delete in 24h · Nothing stored on your device</div><div class="day-sep">Today</div>';
   history.forEach(m=>renderMsg(m));
-  startExpiry();setupVisibility();requestNotifPermission();
+  startExpiry();setupVisibility();
 }
 
 // ── WEBSOCKET ──
@@ -503,7 +358,7 @@ function connectWS(){
   ws.onopen=()=>document.getElementById('on-lbl').textContent='connected';
   ws.onmessage=(e)=>{
     const m=JSON.parse(e.data);
-    if(m.event==='message'){if(m.pid!==pid){renderMsg(m);notifyNewMessage(m.alias,m.content,m.type);}clearTyping(m.alias);}
+    if(m.event==='message'){if(m.pid!==pid)renderMsg(m);clearTyping(m.alias);}
     else if(['room_state','user_joined','user_left'].includes(m.event)){
       updateParts(m.participants||[],m.online||1);
       if(m.event==='user_joined')sysMsg(`${m.alias} joined`);
@@ -618,111 +473,14 @@ function startExpiry(){
 }
 
 // ── PRIVACY BLUR ──
-function setupVisibility(){
-  document.addEventListener('visibilitychange',()=>{
-    if(document.hidden) return;
-    // When returning to app — require PIN if set
-    if(hasPin() && room){
-      requirePin(()=>{ unlockChat(); });
-      lockChat();
-    }
-  });
-}
+function setupVisibility(){document.addEventListener('visibilitychange',()=>{if(!S.blur)return;if(document.hidden)lockChat();});}
 function lockChat(){if(!document.getElementById('chat').classList.contains('active'))return;document.getElementById('chat').classList.add('blurred');document.getElementById('priv-overlay').classList.add('visible');}
 function unlockChat(){document.getElementById('chat').classList.remove('blurred');document.getElementById('priv-overlay').classList.remove('visible');}
-
-// ── CHANGE EXPIRY (creator only) ──
-let newExpirySeconds = 86400;
-const newExpiryLabels = {
-  3600:'Timer resets to 1 hour from now',
-  21600:'Timer resets to 6 hours from now',
-  86400:'Timer resets to 24 hours from now',
-  259200:'Timer resets to 3 days from now',
-  604800:'Timer resets to 7 days from now',
-  2592000:'Timer resets to 30 days from now',
-  99999999:'Room will never expire 👻'
-};
-
-function openExpiryModal(){
-  newExpirySeconds=86400;
-  document.querySelectorAll('#expiry-modal .expiry-btn').forEach(b=>b.classList.remove('selected'));
-  document.getElementById('new-expiry-note').textContent='Select a new duration — timer resets from now';
-  document.getElementById('expiry-modal').classList.add('open');
-}
-
-function selectNewExpiry(btn){
-  document.querySelectorAll('#expiry-modal .expiry-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
-  newExpirySeconds=parseInt(btn.dataset.seconds);
-  document.getElementById('new-expiry-note').textContent=newExpiryLabels[newExpirySeconds]||'';
-}
-
-async function applyNewExpiry(){
-  try{
-    const r=await fetch(`${API}/api/rooms/${room}/expiry`,{
-      method:'PATCH',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({expires_in:newExpirySeconds,participant_id:pid})
-    });
-    if(r.status===403){toast('Only the room creator can change expiry');return;}
-    if(!r.ok)throw new Error();
-    const d=await r.json();
-    secondsLeft=d.seconds_left;
-    closeModal('expiry-modal');
-    const label={3600:'1 hour',21600:'6 hours',86400:'24 hours',259200:'3 days',604800:'7 days',2592000:'30 days',99999999:'Forever 👻'}[newExpirySeconds]||'updated';
-    toast(`Room expiry changed to ${label} ✓`);
-    sysMsg(`⏱ Room expiry changed to ${label}`);
-  }catch(e){toast('Failed to update expiry');}
-}
 
 // ── SETTINGS ──
 function openSettings(){document.getElementById('smodal').classList.add('open');}
 function toggleS(k){S[k]=!S[k];document.getElementById('t-'+k).classList.toggle('on',S[k]);const m={blur:S.blur?'Screen lock ON':'Screen lock OFF',vo:S.vo?'View-once ON':'View-once OFF',norc:S.norc?'Image protection ON':'Image protection OFF'};toast(m[k]);}
 function revealPhoto(o){o.classList.add('gone');setTimeout(()=>o.style.display='none',300);}
-
-// ── NOTIFICATIONS ──
-let unread=0;
-const baseTitle='GhostRoom — Private Chat';
-
-function requestNotifPermission(){
-  if('Notification' in window && Notification.permission==='default'){
-    Notification.requestPermission();
-  }
-}
-
-function notifyNewMessage(senderAlias, content, type){
-  // Only notify if tab is hidden
-  if(!document.hidden) return;
-
-  // Increment unread count + update tab title
-  unread++;
-  document.title=`(${unread}) ${baseTitle}`;
-
-  // Browser popup notification
-  if('Notification' in window && Notification.permission==='granted'){
-    const body = type==='image' ? '📷 Photo' : type==='file' ? '📎 File' : (content||'').slice(0,80);
-    const n = new Notification(`👻 ${senderAlias}`, {
-      body,
-      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">👻</text></svg>',
-      badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">👻</text></svg>',
-      silent: false,
-      tag: 'ghostroom-msg'  // replaces previous notification instead of stacking
-    });
-    n.onclick=()=>{ window.focus(); n.close(); };
-    setTimeout(()=>n.close(), 5000);
-  }
-}
-
-function clearUnread(){
-  unread=0;
-  document.title=baseTitle;
-}
-
-// Clear unread when tab becomes visible
-document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden) clearUnread();
-});
-window.addEventListener('focus', clearUnread);
 
 // ── UTILS ──
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -731,250 +489,11 @@ function fmtTime(iso){try{return new Date(iso).toLocaleTimeString([],{hour:'2-di
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);if(msg)t._t=setTimeout(()=>t.classList.remove('show'),2200);else t.classList.remove('show');}
 document.addEventListener('contextmenu',e=>{if(S.norc&&e.target.tagName==='IMG')e.preventDefault();});
 
-// ── PIN SYSTEM ──
-let pinEntry='';
-let pinMode='unlock'; // 'set' | 'confirm' | 'unlock'
-let pinSetFirst='';
-let pinUnlockCallback=null;
-
-function hashPin(p){
-  // Simple hash — PIN never leaves device
-  let h=0;for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}
-  return h.toString(36);
-}
-
-function hasPin(){return !!localStorage.getItem('gr_pin_hash');}
-
-function showPinScreen(mode, callback){
-  pinMode=mode; pinEntry=''; pinSetFirst=''; pinUnlockCallback=callback;
-  const title=document.getElementById('pin-title');
-  const sub=document.getElementById('pin-sub');
-  const forgot=document.getElementById('pin-forgot');
-  if(mode==='set'){
-    title.textContent='Set a PIN';
-    sub.textContent='Choose a 4-digit PIN to protect your GhostRoom';
-    forgot.style.display='none';
-  } else if(mode==='confirm'){
-    title.textContent='Confirm PIN';
-    sub.textContent='Enter your PIN again to confirm';
-    forgot.style.display='none';
-  } else {
-    title.textContent='Enter PIN';
-    sub.textContent='Enter your GhostRoom PIN to continue';
-    forgot.style.display='block';
-  }
-  updatePinDots();
-  document.getElementById('pin-screen').classList.add('visible');
-}
-
-function hidePinScreen(){
-  document.getElementById('pin-screen').classList.remove('visible');
-  pinEntry='';
-}
-
-function updatePinDots(){
-  for(let i=0;i<4;i++){
-    const d=document.getElementById('pd'+i);
-    d.classList.remove('filled','error');
-    if(i<pinEntry.length) d.classList.add('filled');
-  }
-}
-
-function pinPress(digit){
-  if(pinEntry.length>=4) return;
-  pinEntry+=digit;
-  updatePinDots();
-  if(pinEntry.length===4) setTimeout(pinSubmit, 120);
-}
-
-function pinDel(){
-  pinEntry=pinEntry.slice(0,-1);
-  updatePinDots();
-}
-
-function pinSubmit(){
-  if(pinMode==='set'){
-    pinSetFirst=pinEntry; // save first entry
-    const savedCallback=pinUnlockCallback; // save callback before showPinScreen resets it
-    pinMode='confirm';
-    pinEntry='';
-    const title=document.getElementById('pin-title');
-    const sub=document.getElementById('pin-sub');
-    const forgot=document.getElementById('pin-forgot');
-    title.textContent='Confirm PIN';
-    sub.textContent='Enter your PIN again to confirm';
-    forgot.style.display='none';
-    updatePinDots();
-    pinUnlockCallback=savedCallback;
-  } else if(pinMode==='confirm'){
-    if(pinEntry===pinSetFirst){
-      localStorage.setItem('gr_pin_hash', hashPin(pinEntry));
-      hidePinScreen();
-      toast('PIN set! 🔒');
-      if(pinUnlockCallback) pinUnlockCallback();
-    } else {
-      pinError('PINs do not match — try again');
-      setTimeout(()=>{
-        pinSetFirst='';
-        pinMode='set';
-        pinEntry='';
-        const title=document.getElementById('pin-title');
-        const sub=document.getElementById('pin-sub');
-        title.textContent='Set a PIN';
-        sub.textContent='Choose a 4-digit PIN to protect your GhostRoom';
-        updatePinDots();
-      }, 800);
-    }
-  } else {
-    // unlock mode
-    if(hashPin(pinEntry)===localStorage.getItem('gr_pin_hash')){
-      pinSuccess();
-    } else {
-      pinError('Wrong PIN');
-    }
-  }
-}
-
-function pinError(msg){
-  for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.add('error');
-  const dots=document.getElementById('pin-dots');
-  dots.classList.add('shake');
-  setTimeout(()=>{dots.classList.remove('shake');pinEntry='';updatePinDots();},500);
-  document.getElementById('pin-sub').textContent=msg;
-  setTimeout(()=>{
-    document.getElementById('pin-sub').textContent=pinMode==='unlock'?'Enter your GhostRoom PIN to continue':'Enter your PIN again to confirm';
-  },1500);
-}
-
-function pinSuccess(){
-  for(let i=0;i<4;i++){
-    const d=document.getElementById('pd'+i);
-    d.classList.remove('error');
-    d.classList.add('filled');
-  }
-  setTimeout(()=>{
-    hidePinScreen();
-    if(pinUnlockCallback) pinUnlockCallback();
-  },200);
-}
-
-function pinForgot(){
-  if(confirm('Reset PIN? You will need to set a new one.\n\nThis does NOT remove you from your room.')){
-    localStorage.removeItem('gr_pin_hash');
-    showPinScreen('set', pinUnlockCallback);
-  }
-}
-
-function requirePin(callback){
-  if(!hasPin()){
-    // No PIN set yet — set one first
-    showPinScreen('set', callback);
-  } else {
-    showPinScreen('unlock', callback);
-  }
-}
-
-// ── SESSION PERSISTENCE ──
-function saveSession(){
-  localStorage.setItem('gr_session', JSON.stringify({room,pid,alias,color:myColor,secondsLeft}));
-}
-function clearSession(){
-  localStorage.removeItem('gr_session');
-}
-function loadSession(){
-  try{ return JSON.parse(localStorage.getItem('gr_session')); }
-  catch{ return null; }
-}
-
-// ── LEAVE ROOM ──
-function leaveRoom(){
-  if(!confirm('Leave this room? You will need the Room ID to rejoin.')) return;
-  clearSession();
-  if(ws) ws.close();
-  ws=null; room=null; pid=null; alias=null; myColor=null;
-  showScreen('landing');
-  toast('You left the room');
-}
-
-// ── QR SCAN AUTO-FILL + AUTO-REJOIN ──
-window.addEventListener('load', async ()=>{
-  const urlRoom = new URLSearchParams(window.location.search).get('room');
-
-  // Always require PIN first if one is set
-  if(hasPin()){
-    showPinScreen('unlock', ()=>bootApp(urlRoom));
-  } else {
-    bootApp(urlRoom);
-  }
+// ── QR SCAN AUTO-FILL ──
+window.addEventListener('load',()=>{
+  const r=new URLSearchParams(window.location.search).get('room');
+  if(r){document.getElementById('join-id').value=r;showScreen('join');}
 });
-
-async function bootApp(urlRoom){
-  await loadServerURL();
-  if(!API){ showScreen('landing'); return; }
-
-  // Priority 1: QR scan URL has a room param — go to join screen
-  if(urlRoom){
-    document.getElementById('join-id').value=urlRoom;
-    showScreen('join');
-    return;
-  }
-
-  // Priority 2: Saved session — auto-rejoin silently
-  const saved = loadSession();
-  if(saved && saved.room && saved.pid){
-    // Check room still exists and not expired
-    try{
-      showScreen('chat');
-      document.getElementById('msgs').innerHTML='<div class="connecting"><div class="spinner"></div><p style="color:var(--muted2);font-size:.88rem">Rejoining your room…</p></div>';
-
-      const r = await fetch(`${API}/api/rooms/${saved.room}/exists`);
-      const d = await r.json();
-
-      if(!d.exists || d.expired){
-        clearSession();
-        showScreen('landing');
-        toast('Your previous room expired');
-        return;
-      }
-
-      // Restore session
-      room=saved.room; pid=saved.pid; alias=saved.alias; myColor=saved.color;
-      secondsLeft=saved.secondsLeft||86400;
-
-      // Fetch latest history
-      const r2 = await fetch(`${API}/api/rooms/${room}/join`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({alias, pid_hint: pid})
-      });
-      if(r2.ok){
-        const d2 = await r2.json();
-        // Use fresh pid if server gave us one, keep alias/color
-        pid=d2.participant_id; secondsLeft=d2.seconds_left;
-        initChat(d2.history);
-        saveSession();
-      } else {
-        initChat([]);
-      }
-      connectWS();
-    } catch(e){
-      clearSession();
-      showScreen('landing');
-    }
-    return;
-  }
-
-  // Priority 3: No session, no QR — show landing
-  // First time user — ask to set a PIN
-  if(!hasPin()){
-    showScreen('landing');
-    setTimeout(()=>{
-      showPinScreen('set',()=>showScreen('landing'));
-    }, 800);
-  } else {
-    showScreen('landing');
-  }
-}
 </script>
 </body>
 </html>
