@@ -343,8 +343,22 @@ input[type="file"]{display:none;}
 <div class="toast" id="toast"></div>
 
 <script>
-const API = window.location.origin;
-const WS  = API.replace(/^http/,'ws');
+let API = null;
+let WS  = null;
+
+// Load server URL from GitHub url.json
+async function loadServerURL(){
+  try{
+    const r = await fetch('https://raw.githubusercontent.com/evangelistalong/ghostroom-status/main/url.json?t='+Date.now());
+    const d = await r.json();
+    API = d.url.replace(/\/$/, '');
+    WS  = API.replace(/^http/,'ws');
+    console.log('Server URL loaded:', API);
+  } catch(e){
+    console.error('Could not load server URL:', e);
+    toast('Cannot reach server — is server.py running?');
+  }
+}
 
 let room=null,pid=null,alias=null,myColor=null;
 let ws=null,attachedFile=null;
@@ -771,6 +785,8 @@ window.addEventListener('load', async ()=>{
 });
 
 async function bootApp(urlRoom){
+  await loadServerURL();
+  if(!API){ showScreen('landing'); return; }
 
   // Priority 1: QR scan URL has a room param — go to join screen
   if(urlRoom){
