@@ -284,7 +284,7 @@ input[type="file"]{display:none;}
     <div class="join-card">
       <h2>Join a Room 🔗</h2>
       <p>Enter the Room ID or scan a QR code — no account needed</p>
-      <div class="ig"><label>Room ID</label><input type="tel" id="join-id" placeholder="e.g. 4821" inputmode="numeric" pattern="[0-9]*" maxlength="10"/></div>
+      <div class="ig"><label>Room ID</label><input type="text" id="join-id" placeholder="e.g. 4821" maxlength="10"/></div>
       <div class="ig"><label>Your alias <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input type="text" id="join-alias" placeholder="Leave blank for auto alias" maxlength="20"/></div>
       <button class="btn-p w100 mt8" onclick="joinRoom()">Enter Room →</button>
       <button class="btn-s w100 mt8" onclick="showScreen('landing')">← Back</button>
@@ -502,7 +502,7 @@ async function joinRoom(){
   const rid=document.getElementById('join-id').value.trim();
   const al=document.getElementById('join-alias').value.trim();
   if(!rid){toast('Please enter a Room ID');return;}
-  if(!/^\d+$/.test(rid)){toast('Room ID must be a number');return;}
+  if(!/^\d+$/.test(rid)&&!/^tep\d{3}$/.test(rid)){toast('Invalid Room ID');return;}
   showScreen('chat');
   document.getElementById('msgs').innerHTML='<div class="connecting"><div class="spinner"></div><p style="color:var(--muted2);font-size:.88rem">Connecting…</p></div>';
   try{
