@@ -55,19 +55,27 @@ function setupSpreadsheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // ----- Settings tab -----
+  // Safe to re-run: names and categories already on the tab are kept.
+  var people = DEFAULT_PEOPLE.slice();
+  var categories = CATEGORIES.slice();
+  try { var p = readColumn_(ss, 'People'); if (p.length) people = p; } catch (e) {}
+  try { var c = readColumn_(ss, 'Categories'); if (c.length) categories = c; } catch (e) {}
+  while (people.length < 3) people.push('Person ' + (people.length + 1));
+  people = people.slice(0, 3);
+
   var settings = getOrCreateSheet_(ss, SHEET_SETTINGS);
   settings.clear();
   settings.getRange('A1').setValue('People (who can pay / log expenses)');
-  settings.getRange('A2:A4').setValues(DEFAULT_PEOPLE.map(function (p) { return [p]; }));
+  settings.getRange('A2:A4').setValues(people.map(function (v) { return [v]; }));
   settings.getRange('C1').setValue('Categories');
-  settings.getRange('C2:C' + (CATEGORIES.length + 1))
-    .setValues(CATEGORIES.map(function (c) { return [c]; }));
+  settings.getRange('C2:C' + (categories.length + 1))
+    .setValues(categories.map(function (v) { return [v]; }));
   settings.getRange('E1').setValue('Reimbursed by');
   settings.getRange('E2').setValue('Samit');
   settings.getRange('A1:E1').setFontWeight('bold');
   settings.setColumnWidths(1, 5, 200);
   ss.setNamedRange('People', settings.getRange('A2:A4'));
-  ss.setNamedRange('Categories', settings.getRange('C2:C' + (CATEGORIES.length + 1)));
+  ss.setNamedRange('Categories', settings.getRange('C2:C' + (categories.length + 1)));
 
   // ----- Expenses tab -----
   var exp = getOrCreateSheet_(ss, SHEET_EXPENSES);
@@ -88,6 +96,19 @@ function setupSpreadsheet() {
   exp.getRange(2, 2, maxRows - 1).setNumberFormat('yyyy-mm-dd');
   exp.getRange(2, 9, maxRows - 1).setNumberFormat('yyyy-mm-dd');
   exp.getRange(2, 5, maxRows - 1).setNumberFormat('$#,##0.00');
+  // Reimburse Month must stay literal text: Sheets otherwise converts
+  // "2026-09" into a Date, which google.script.run cannot send to the app.
+  exp.getRange(2, 7, maxRows - 1).setNumberFormat('@');
+
+  // Repair rows written before the text format was in place.
+  var lastRow = exp.getLastRow();
+  if (lastRow > 1) {
+    var gRange = exp.getRange(2, 7, lastRow - 1, 1);
+    var tz = ss.getSpreadsheetTimeZone();
+    gRange.setValues(gRange.getValues().map(function (r) {
+      return [fmtMonth_(r[0], tz)];
+    }));
+  }
 
   // Color rows by status: green when Reimbursed, amber when Pending.
   var dataRange = exp.getRange(2, 1, maxRows - 1, HEADERS.length);
@@ -163,22 +184,26 @@ function getData() {
   if (exp && exp.getLastRow() > 1) {
     var values = exp.getRange(2, 1, exp.getLastRow() - 1, HEADERS.length).getValues();
     var tz = ss.getSpreadsheetTimeZone();
+    // Every field must be a string or number. Sheets silently converts cells
+    // like "2026-09" into Date objects, and google.script.run cannot
+    // serialize Dates — the browser receives null instead of the data and the
+    // whole app fails to load. Coerce defensively.
     rows = values
       .filter(function (r) { return r[0] !== ''; })
       .map(function (r) {
         return {
-          id: r[0],
+          id: String(r[0]),
           date: fmtDate_(r[1], tz),
-          category: r[2],
-          description: r[3],
+          category: cell_(r[2], tz),
+          description: cell_(r[3], tz),
           amount: Number(r[4]) || 0,
-          paidBy: r[5],
-          reimburseMonth: r[6],
-          status: r[7],
+          paidBy: cell_(r[5], tz),
+          reimburseMonth: fmtMonth_(r[6], tz),
+          status: cell_(r[7], tz),
           reimbursedOn: fmtDate_(r[8], tz),
-          notes: r[9],
+          notes: cell_(r[9], tz),
           receiptUrl: String(r[10] || ''),
-          enteredBy: r[11]
+          enteredBy: cell_(r[11], tz)
         };
       });
   }
@@ -367,13 +392,15 @@ function reimburseMonth(month) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var exp = ss.getSheetByName(SHEET_EXPENSES);
-    var today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+    var tz = ss.getSpreadsheetTimeZone();
+    var today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
     var last = exp.getLastRow();
     if (last > 1) {
       var range = exp.getRange(2, 1, last - 1, HEADERS.length);
       var values = range.getValues();
       for (var i = 0; i < values.length; i++) {
-        if (values[i][6] === month && values[i][7] === 'Pending') {
+        // fmtMonth_ so rows whose month cell became a Date still match
+        if (fmtMonth_(values[i][6], tz) === month && values[i][7] === 'Pending') {
           values[i][7] = 'Reimbursed';
           values[i][8] = today;
         }
@@ -443,4 +470,16 @@ function defaultReimburseMonth_(dateStr) {
 function fmtDate_(v, tz) {
   if (v instanceof Date) return Utilities.formatDate(v, tz, 'yyyy-MM-dd');
   return String(v || '');
+}
+
+/** Reimburse month as "yyyy-MM", whether the cell holds text or a Date. */
+function fmtMonth_(v, tz) {
+  if (v instanceof Date) return Utilities.formatDate(v, tz, 'yyyy-MM');
+  return String(v || '');
+}
+
+/** Any cell value as a serializable string (google.script.run chokes on Dates). */
+function cell_(v, tz) {
+  if (v instanceof Date) return Utilities.formatDate(v, tz, 'yyyy-MM-dd');
+  return String(v == null ? '' : v);
 }
