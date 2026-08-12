@@ -34,6 +34,12 @@ var HEADERS = [
 
 var RECEIPT_FOLDER = 'Vacation Receipts (Samit Reimbursement)';
 
+// Receipt reading (optional). Add an Anthropic API key under
+// Project Settings > Script Properties as ANTHROPIC_API_KEY to switch it on.
+// Without a key the app still works — you just type the amount yourself.
+var CLAUDE_MODEL = 'claude-opus-5';
+var CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+
 // ---------------------------------------------------------------------------
 // Menu + one-time setup
 // ---------------------------------------------------------------------------
@@ -179,8 +185,112 @@ function getData() {
   return {
     people: readColumn_(ss, 'People'),
     categories: readColumn_(ss, 'Categories'),
+    scanner: !!PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY'),
     expenses: rows.reverse() // newest first
   };
+}
+
+/**
+ * Reads a receipt photo with Claude's vision API and returns the amount, date,
+ * merchant and a suggested category so the form can be pre-filled.
+ *
+ * Returns {ok: false, reason: ...} rather than throwing when reading fails —
+ * a bad scan should never block someone from typing the expense in by hand.
+ */
+function scanReceipt(b64) {
+  var key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
+  if (!key) return { ok: false, reason: 'no_key' };
+  if (!b64) return { ok: false, reason: 'no_image' };
+
+  // Use the live category list so edits on the Settings tab are picked up here.
+  var categories;
+  try {
+    categories = readColumn_(SpreadsheetApp.getActiveSpreadsheet(), 'Categories');
+  } catch (err) {
+    categories = CATEGORIES;
+  }
+  if (!categories.length) categories = CATEGORIES;
+
+  var schema = {
+    type: 'object',
+    properties: {
+      total: {
+        type: 'number',
+        description: 'The final total actually paid, including tax and tip. 0 if unreadable.'
+      },
+      currency: { type: 'string', description: 'ISO code, e.g. USD. Empty if unclear.' },
+      date: { type: 'string', description: 'Date on the receipt as yyyy-mm-dd. Empty if unclear.' },
+      merchant: { type: 'string', description: 'Business name. Empty if unclear.' },
+      category: { type: 'string', enum: categories },
+      confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+      notes: {
+        type: 'string',
+        description: 'Short note only if something needs a human eye (split bill, ' +
+          'unreadable total, foreign currency). Otherwise empty.'
+      }
+    },
+    required: ['total', 'currency', 'date', 'merchant', 'category', 'confidence', 'notes'],
+    additionalProperties: false
+  };
+
+  var payload = {
+    model: CLAUDE_MODEL,
+    max_tokens: 8192,
+    // Structured outputs guarantee the reply parses; low effort keeps this
+    // fast and cheap for what is a straightforward extraction task.
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: schema } },
+    fallbacks: 'default',
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+        {
+          type: 'text',
+          text: 'This is a receipt or booking confirmation from a US vacation. ' +
+            'Read the grand total actually paid — the final amount including tax and ' +
+            'tip, not the subtotal or a per-person share. Report the date printed on ' +
+            'the receipt, the merchant, and the best-fitting category. ' +
+            'Leave a field empty rather than guessing at it, and set confidence to ' +
+            '"low" if the image is blurry, cut off, or ambiguous.'
+        }
+      ]
+    }]
+  };
+
+  var res = UrlFetchApp.fetch(CLAUDE_URL, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'server-side-fallback-2026-07-01'
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+
+  if (res.getResponseCode() !== 200) {
+    return { ok: false, reason: 'api_error', detail: res.getContentText().slice(0, 300) };
+  }
+
+  var body = JSON.parse(res.getContentText());
+  if (body.stop_reason === 'refusal') return { ok: false, reason: 'refused' };
+
+  // Thinking blocks come first, so pick out the text block rather than content[0].
+  var text = '';
+  for (var i = 0; i < (body.content || []).length; i++) {
+    if (body.content[i].type === 'text') { text = body.content[i].text; break; }
+  }
+  if (!text) return { ok: false, reason: 'empty' };
+
+  var data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    return { ok: false, reason: 'unparsed' };
+  }
+  data.ok = true;
+  return data;
 }
 
 function addExpense(e) {

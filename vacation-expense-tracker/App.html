@@ -90,11 +90,13 @@
         <div class="full"><label>Description</label><input type="text" id="fDesc" placeholder="e.g. Hilton Orlando, 3 nights"></div>
         <div class="full"><label>Notes (optional)</label><input type="text" id="fNotes" placeholder="confirmation #, split details…"></div>
         <div class="full">
-          <label>Receipt photo / screenshot (optional)</label>
+          <label>Receipt photo / screenshot — read automatically when a key is set</label>
           <input type="file" id="fReceipt" accept="image/*" capture="environment" onchange="pickReceipt(this)">
           <div id="receiptPreview" style="display:none; margin-top:8px;">
             <img id="receiptImg" alt="receipt preview" style="max-height:120px; max-width:100%; border-radius:8px; border:1px solid var(--line);">
             <button type="button" class="btn-sm red" onclick="clearReceipt()">Remove</button>
+            <button type="button" class="btn-sm" id="rescanBtn" onclick="scanReceipt()" style="display:none;">🔍 Read it again</button>
+            <div id="scanStatus" class="meta" style="margin-top:4px;"></div>
           </div>
         </div>
         <div class="full"><button class="btn" id="fSubmit" type="submit">Add expense</button></div>
@@ -188,6 +190,7 @@
         receiptB64 = jpeg.split(',')[1];
         $('receiptImg').src = jpeg;
         $('receiptPreview').style.display = 'block';
+        if (DATA.scanner) scanReceipt();
       };
       img.onerror = function () { fail(new Error('Could not read that image.')); clearReceipt(); };
       img.src = dataUrl;
@@ -197,6 +200,47 @@
       receiptB64 = '';
       $('fReceipt').value = '';
       $('receiptPreview').style.display = 'none';
+      $('scanStatus').textContent = '';
+      $('rescanBtn').style.display = 'none';
+    }
+
+    // Ask Claude to read the receipt, then pre-fill the form. Everything it
+    // fills in stays editable — this is a head start, not the final word.
+    function scanReceipt() {
+      if (!receiptB64) return;
+      $('rescanBtn').style.display = 'none';
+      $('scanStatus').textContent = '🔍 Reading the receipt…';
+      google.script.run
+        .withSuccessHandler(applyScan)
+        .withFailureHandler(function () { scanFailed('Could not reach the reader.'); })
+        .scanReceipt(receiptB64);
+    }
+
+    function applyScan(r) {
+      $('rescanBtn').style.display = '';
+      if (!r || !r.ok) {
+        scanFailed(r && r.reason === 'refused'
+          ? 'Reader declined this image — enter the amount manually.'
+          : 'Could not read it — enter the amount manually.');
+        return;
+      }
+      if (r.total > 0) $('fAmount').value = Number(r.total).toFixed(2);
+      if (r.date) $('fDate').value = r.date;
+      if (r.merchant && !$('fDesc').value) $('fDesc').value = r.merchant;
+      if (r.category) $('fCategory').value = r.category;
+      if (r.notes && !$('fNotes').value) $('fNotes').value = r.notes;
+
+      var flag = r.confidence === 'high' ? '✅' : '⚠️';
+      var msg = flag + ' Read ' + (r.total > 0 ? usd(r.total) : 'no total') +
+        (r.merchant ? ' at ' + r.merchant : '') +
+        ' (' + r.confidence + ' confidence). Check it before saving.';
+      if (r.currency && r.currency !== 'USD') msg += ' Receipt is in ' + r.currency + ' — convert to USD.';
+      $('scanStatus').textContent = msg;
+    }
+
+    function scanFailed(msg) {
+      $('rescanBtn').style.display = '';
+      $('scanStatus').textContent = '⚠️ ' + msg;
     }
 
     // ------- add -------

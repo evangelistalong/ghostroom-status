@@ -28,6 +28,17 @@ desktop for screenshots), compresses the image in the browser, saves it to a
 Drive folder called **"Vacation Receipts (Samit Reimbursement)"**, and links
 it on the expense row (📎 Receipt) and in the sheet's Receipt column.
 
+**Automatic receipt reading (optional):** with an Anthropic API key set, the
+app reads each photo with Claude's vision API and pre-fills the total, date,
+merchant and category — you review and hit save. Everything it fills in stays
+editable, and it flags low-confidence reads so you know when to double-check.
+Without a key the photo still attaches; you just type the amount yourself.
+
+To enable it: get a key at [console.anthropic.com](https://console.anthropic.com),
+then in Apps Script go to **⚙️ Project Settings → Script Properties → Add
+script property**, name it exactly `ANTHROPIC_API_KEY`, and paste the key as
+the value. Reading a receipt costs roughly 1–3 cents.
+
 Tabs:
 - **Expenses** — the database, with dropdowns and color-coding by status
 - **Monthly Summary** — auto-updating totals: owed by month, pending by month,
@@ -60,6 +71,9 @@ Each person picks their name from the "I am" menu in the header (remembered on
 their device), then can add expenses with receipt photos, filter, mark
 individual expenses paid, or hit **"💸 Samit paid this month"** to clear a
 whole month at once.
+
+Note the web app runs as you, so receipt reading uses your API key no matter
+which of the three people snaps the photo — you don't need to hand the key out.
 
 ## Updating the code later
 
