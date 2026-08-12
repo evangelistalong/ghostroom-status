@@ -46,16 +46,17 @@
     .month-head strong { font-size: 15px; }
     .month-head .sub { color: var(--muted); font-size: 13px; }
 
-    .tbl-wrap { overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 14px; white-space: nowrap; }
-    td.desc { white-space: normal; min-width: 160px; }
-    th { background: #f7f9fc; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-    tr:last-child td { border-bottom: none; }
-    .amt { font-variant-numeric: tabular-nums; font-weight: 600; }
-    .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    /* Expense cards — no sideways scrolling on phones, everything visible */
+    .exp-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+    .exp-row1 { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .exp-desc { font-weight: 600; margin-top: 3px; }
+    .exp-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; }
+    .amt { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 17px; }
+    .chip { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; border: none; font-family: inherit; }
+    button.chip { cursor: pointer; }
     .chip.Pending { background: var(--amber-bg); color: var(--amber); }
     .chip.Reimbursed { background: var(--green-bg); color: var(--green); }
+    footer { text-align: center; color: var(--muted); font-size: 12px; padding: 6px 0 26px; }
     .meta { color: var(--muted); font-size: 12px; }
     #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; }
     #toast.show { opacity: .95; }
@@ -82,7 +83,7 @@
   <header>
     <h1>🇺🇸 US Vacation — Samit Reimbursement</h1>
     <div class="who">
-      <button type="button" class="refresh" onclick="hardRefresh()" title="Reload latest version">↻</button>
+      <button type="button" class="refresh" onclick="hardRefresh()" title="Refresh data">↻</button>
       I am:
       <select id="whoami" onchange="saveWho()"></select>
     </div>
@@ -140,6 +141,11 @@
       <div id="loading">Loading…</div>
       <div id="list"></div>
     </div>
+
+    <footer>
+      US Vacation Expense Tracker <span id="appVersion"></span><br>
+      Created by Evangelista Long · Built with Claude
+    </footer>
   </main>
 
   <!-- Receipt popup. Clicking anywhere on it closes it; the Drive link opts out. -->
@@ -154,7 +160,12 @@
   <div id="toast"></div>
 
   <script>
+    // Bump on every release — shown in the footer so you can tell at a glance
+    // whether the phone is running the latest deployed version.
+    var APP_VERSION = '1.7';
+
     var DATA = { people: [], categories: [], expenses: [] };
+    document.getElementById('appVersion').textContent = 'v' + APP_VERSION;
 
     function $(id) { return document.getElementById(id); }
     function usd(n) { return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -207,12 +218,30 @@
     }
 
     // ------- refresh / pull-to-refresh -------
-    // A full reload fetches both fresh data AND the latest deployed version of
-    // the app, which phone browsers otherwise cache aggressively.
+    // NEVER location.reload() here: Apps Script serves the app through a
+    // one-time iframe URL, and reloading it lands on a blank white page.
+    // Re-fetch the data in place instead.
     function hardRefresh() {
       $('ptr').textContent = '↻ Refreshing…';
       $('ptr').style.top = '0px';
-      location.reload();
+      google.script.run
+        .withSuccessHandler(function (data) {
+          hidePtr();
+          if (data && data.categories) {
+            refresh(data);
+            toast('✅ Up to date');
+          } else {
+            toast('⚠️ Refresh failed — try again');
+          }
+        })
+        .withFailureHandler(function (e) { hidePtr(); fail(e); })
+        .getData();
+    }
+
+    function hidePtr() {
+      $('ptr').style.top = '-46px';
+      $('ptr').className = '';
+      $('ptr').textContent = '↓ Pull to refresh';
     }
 
     // Custom gesture because the browser's native pull-to-refresh usually
@@ -244,8 +273,7 @@
         if (pull > PULL_TO_TRIGGER) {
           hardRefresh();
         } else {
-          $('ptr').style.top = '-46px';
-          $('ptr').className = '';
+          hidePtr();
         }
       }, { passive: true });
     })();
@@ -358,12 +386,28 @@
       img.removeAttribute('src');
     }
 
-    // One delegated listener covers every 📎 link, including rows rendered later.
+    // Delegated listeners cover cards rendered at any time.
     document.addEventListener('click', function (ev) {
-      var a = ev.target.closest ? ev.target.closest('.rlink') : null;
+      var t = ev.target;
+      var a = t.closest ? t.closest('.rlink') : null;
       if (a) {
         ev.preventDefault();
         showReceiptPopup(a.getAttribute('data-url'));
+        return;
+      }
+      // Tap the status chip on a card to flip Pending <-> Reimbursed.
+      var chip = t.closest ? t.closest('.chip-btn') : null;
+      if (chip) {
+        var label = chip.getAttribute('data-label');
+        var pending = chip.getAttribute('data-status') === 'Pending';
+        var q = pending
+          ? 'Mark "' + label + '" as reimbursed by Samit?'
+          : 'Move "' + label + '" back to pending?';
+        if (confirm(q)) {
+          chip.disabled = true;
+          chip.textContent = '…';
+          setStatus(chip.getAttribute('data-id'), pending ? 'Reimbursed' : 'Pending');
+        }
       }
     });
     document.addEventListener('keydown', function (ev) {
@@ -502,26 +546,28 @@
           '</div>';
         var body = g.map(function (e) {
           var label = (e.description || e.category).replace(/'/g, '');
-          var toggle = e.status === 'Pending'
-            ? '<button class="btn-sm green" onclick="setStatus(\'' + e.id + '\',\'Reimbursed\')">Mark paid</button>'
-            : '<button class="btn-sm" onclick="setStatus(\'' + e.id + '\',\'Pending\')">Undo</button>';
-          return '<tr>' +
-            '<td>' + esc(e.date) + '</td>' +
-            '<td>' + esc(e.category) + '</td>' +
-            '<td class="desc">' + esc(e.description) +
-              (e.notes ? '<div class="meta">' + esc(e.notes) + '</div>' : '') +
-              (e.receiptUrl ? '<div class="meta"><a href="' + esc(e.receiptUrl) + '" class="rlink" data-url="' + esc(e.receiptUrl) + '">📎 Receipt</a></div>' : '') + '</td>' +
-            '<td class="amt">' + usd(e.amount) + '</td>' +
-            '<td>' + esc(e.paidBy) + '</td>' +
-            '<td><span class="chip ' + esc(e.status) + '">' + esc(e.status) + '</span>' +
-              (e.reimbursedOn ? '<div class="meta">' + esc(e.reimbursedOn) + '</div>' : '') + '</td>' +
-            '<td>' + toggle + ' <button class="btn-sm red" onclick="removeExpense(\'' + e.id + '\',\'' + esc(label) + '\')">✕</button></td>' +
-            '</tr>';
+          // The status chip IS the button: tap Pending -> reimbursed, tap
+          // Reimbursed -> back to pending (both behind a confirm).
+          var chip = '<button class="chip ' + esc(e.status) + ' chip-btn"' +
+            ' data-id="' + esc(e.id) + '" data-status="' + esc(e.status) + '"' +
+            ' data-label="' + esc(label) + '">' +
+            (e.status === 'Pending' ? 'Pending — tap when paid' : '✓ Reimbursed') +
+            '</button>';
+          return '<div class="exp-card">' +
+            '<div class="exp-row1"><span class="amt">' + usd(e.amount) + '</span>' + chip + '</div>' +
+            '<div class="exp-desc">' + esc(e.description || e.category) + '</div>' +
+            '<div class="meta">' + esc(e.date) + ' · ' + esc(e.category) + ' · Paid by ' + esc(e.paidBy) +
+              (e.reimbursedOn ? ' · Reimbursed ' + esc(e.reimbursedOn) : '') + '</div>' +
+            (e.notes ? '<div class="meta">' + esc(e.notes) + '</div>' : '') +
+            '<div class="exp-actions">' +
+              '<span class="meta">' +
+                (e.receiptUrl ? '<a href="' + esc(e.receiptUrl) + '" class="rlink" data-url="' + esc(e.receiptUrl) + '">📎 Receipt</a>' : '') +
+              '</span>' +
+              '<button class="btn-sm red" onclick="removeExpense(\'' + esc(e.id) + '\',\'' + esc(label) + '\')">✕ Delete</button>' +
+            '</div>' +
+            '</div>';
         }).join('');
-        return '<div class="month-block">' + head +
-          '<div class="tbl-wrap"><table><thead><tr>' +
-          '<th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid by</th><th>Status</th><th></th>' +
-          '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
+        return '<div class="month-block">' + head + body + '</div>';
       }).join('');
     }
   </script>
