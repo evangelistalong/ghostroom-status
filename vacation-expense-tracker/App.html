@@ -60,12 +60,22 @@
     #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; }
     #toast.show { opacity: .95; }
     #loading { text-align: center; color: var(--muted); padding: 30px; }
+
+    /* Pull-to-refresh */
+    body { overscroll-behavior-y: contain; } /* suppress the browser's own bounce so our gesture wins */
+    #ptr { position: fixed; top: -46px; left: 0; right: 0; height: 40px; line-height: 40px; text-align: center; font-size: 13px; font-weight: 600; color: var(--navy); background: var(--card); border-bottom: 1px solid var(--line); z-index: 10; transition: top .15s; }
+    #ptr.ready { color: var(--green); }
+    header .refresh { background: rgba(255,255,255,.15); color: #fff; border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 17px; cursor: pointer; }
   </style>
 </head>
 <body>
+  <!-- Pull-to-refresh indicator: slides into view as you drag down from the top -->
+  <div id="ptr">↓ Pull to refresh</div>
+
   <header>
     <h1>🇺🇸 US Vacation — Samit Reimbursement</h1>
     <div class="who">
+      <button type="button" class="refresh" onclick="hardRefresh()" title="Reload latest version">↻</button>
       I am:
       <select id="whoami" onchange="saveWho()"></select>
     </div>
@@ -171,6 +181,50 @@
       localStorage.setItem('vacay-who', $('whoami').value);
       $('fPaidBy').value = $('whoami').value;
     }
+
+    // ------- refresh / pull-to-refresh -------
+    // A full reload fetches both fresh data AND the latest deployed version of
+    // the app, which phone browsers otherwise cache aggressively.
+    function hardRefresh() {
+      $('ptr').textContent = '↻ Refreshing…';
+      $('ptr').style.top = '0px';
+      location.reload();
+    }
+
+    // Custom gesture because the browser's native pull-to-refresh usually
+    // doesn't work inside the iframe Apps Script serves the app in.
+    (function () {
+      var PULL_TO_TRIGGER = 90; // px of drag needed
+      var startY = null;
+
+      document.addEventListener('touchstart', function (e) {
+        // Only arm the gesture when already scrolled to the very top
+        startY = (window.scrollY <= 0) ? e.touches[0].clientY : null;
+      }, { passive: true });
+
+      document.addEventListener('touchmove', function (e) {
+        if (startY === null) return;
+        var pull = e.touches[0].clientY - startY;
+        if (pull <= 0) { startY = null; $('ptr').style.top = '-46px'; return; }
+        var shown = Math.min(pull / 2, 46); // drag resistance
+        $('ptr').style.top = (shown - 46) + 'px';
+        var ready = pull > PULL_TO_TRIGGER;
+        $('ptr').textContent = ready ? '↑ Release to refresh' : '↓ Pull to refresh';
+        $('ptr').className = ready ? 'ready' : '';
+      }, { passive: true });
+
+      document.addEventListener('touchend', function (e) {
+        if (startY === null) return;
+        var pull = e.changedTouches[0].clientY - startY;
+        startY = null;
+        if (pull > PULL_TO_TRIGGER) {
+          hardRefresh();
+        } else {
+          $('ptr').style.top = '-46px';
+          $('ptr').className = '';
+        }
+      }, { passive: true });
+    })();
 
     // ------- receipt photo -------
     var receiptB64 = ''; // compressed JPEG, base64 without the data: prefix
