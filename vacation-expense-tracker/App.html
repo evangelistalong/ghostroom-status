@@ -61,6 +61,13 @@
     #toast.show { opacity: .95; }
     #loading { text-align: center; color: var(--muted); padding: 30px; }
 
+    /* Receipt popup: tap 📎 to open, tap anywhere to close */
+    #lightbox { position: fixed; inset: 0; background: rgba(12, 18, 28, .88); display: none; z-index: 50; align-items: center; justify-content: center; padding: 18px; cursor: zoom-out; }
+    #lightbox.show { display: flex; }
+    #lightbox img { max-width: 100%; max-height: 82vh; border-radius: 10px; background: #fff; box-shadow: 0 8px 40px rgba(0,0,0,.5); }
+    #lightbox .lb-msg { color: #fff; text-align: center; font-size: 15px; }
+    #lightbox .lb-actions { position: fixed; bottom: 18px; left: 0; right: 0; text-align: center; }
+
     /* Pull-to-refresh */
     body { overscroll-behavior-y: contain; } /* suppress the browser's own bounce so our gesture wins */
     #ptr { position: fixed; top: -46px; left: 0; right: 0; height: 40px; line-height: 40px; text-align: center; font-size: 13px; font-weight: 600; color: var(--navy); background: var(--card); border-bottom: 1px solid var(--line); z-index: 10; transition: top .15s; }
@@ -134,6 +141,15 @@
       <div id="list"></div>
     </div>
   </main>
+
+  <!-- Receipt popup. Clicking anywhere on it closes it; the Drive link opts out. -->
+  <div id="lightbox" onclick="hideReceiptPopup()">
+    <img id="lightboxImg" alt="receipt">
+    <div id="lbMsg" class="lb-msg" style="display:none;">Can't preview this receipt here — use the button below.</div>
+    <div class="lb-actions">
+      <a id="lbOpen" href="#" target="_blank" rel="noopener" class="btn-sm" onclick="event.stopPropagation()">Open in Drive ↗</a>
+    </div>
+  </div>
 
   <div id="toast"></div>
 
@@ -313,6 +329,47 @@
       $('scanStatus').textContent = '⚠️ ' + msg;
     }
 
+    // ------- receipt popup -------
+    // The stored link is a Drive *page*, not an image, so the popup loads the
+    // photo through Drive's thumbnail endpoint (real image bytes for
+    // link-shared files). If that fails, the Open in Drive button remains.
+    function driveThumb(url) {
+      var m = String(url).match(/\/d\/([-\w]+)/) || String(url).match(/[?&]id=([-\w]+)/);
+      return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w1600' : url;
+    }
+
+    function showReceiptPopup(url) {
+      var img = $('lightboxImg');
+      $('lbOpen').href = url;
+      $('lbMsg').style.display = 'none';
+      img.style.display = '';
+      img.onerror = function () {
+        img.style.display = 'none';
+        $('lbMsg').style.display = 'block';
+      };
+      img.src = driveThumb(url);
+      $('lightbox').classList.add('show');
+    }
+
+    function hideReceiptPopup() {
+      $('lightbox').classList.remove('show');
+      var img = $('lightboxImg');
+      img.onerror = null;
+      img.removeAttribute('src');
+    }
+
+    // One delegated listener covers every 📎 link, including rows rendered later.
+    document.addEventListener('click', function (ev) {
+      var a = ev.target.closest ? ev.target.closest('.rlink') : null;
+      if (a) {
+        ev.preventDefault();
+        showReceiptPopup(a.getAttribute('data-url'));
+      }
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') hideReceiptPopup();
+    });
+
     // A date input silently blanks itself if handed anything but yyyy-mm-dd,
     // and the field is required — so a stray format would block submitting.
     // Normalize first, and keep the old value if the browser still refuses.
@@ -453,7 +510,7 @@
             '<td>' + esc(e.category) + '</td>' +
             '<td class="desc">' + esc(e.description) +
               (e.notes ? '<div class="meta">' + esc(e.notes) + '</div>' : '') +
-              (e.receiptUrl ? '<div class="meta"><a href="' + esc(e.receiptUrl) + '" target="_blank" rel="noopener">📎 Receipt</a></div>' : '') + '</td>' +
+              (e.receiptUrl ? '<div class="meta"><a href="' + esc(e.receiptUrl) + '" class="rlink" data-url="' + esc(e.receiptUrl) + '">📎 Receipt</a></div>' : '') + '</td>' +
             '<td class="amt">' + usd(e.amount) + '</td>' +
             '<td>' + esc(e.paidBy) + '</td>' +
             '<td><span class="chip ' + esc(e.status) + '">' + esc(e.status) + '</span>' +
