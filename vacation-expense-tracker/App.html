@@ -81,7 +81,10 @@
 
     <div class="panel">
       <h2>➕ Add expense</h2>
-      <form class="grid" id="form" onsubmit="return submitExpense(event)">
+      <!-- novalidate: the browser blocks submit BEFORE onsubmit fires, so an
+           invalid field would leave the button looking dead with no message.
+           We check validity ourselves and say what's missing. -->
+      <form class="grid" id="form" novalidate onsubmit="return submitExpense(event)">
         <div><label>Date</label><input type="date" id="fDate" required></div>
         <div><label>Category</label><select id="fCategory" required></select></div>
         <div><label>Amount (USD)</label><input type="number" id="fAmount" min="0.01" step="0.01" placeholder="0.00" required></div>
@@ -135,7 +138,8 @@
       setTimeout(function () { t.classList.remove('show'); }, 2500);
     }
     function fail(err) { toast('⚠️ ' + (err && err.message ? err.message : err)); setBusy(false); }
-    function setBusy(b) { $('fSubmit').disabled = b; }
+    var submitting = false;
+    function setBusy(b) { submitting = b; $('fSubmit').disabled = b; }
 
     // ------- boot -------
     google.script.run.withSuccessHandler(boot).withFailureHandler(fail).getData();
@@ -228,10 +232,11 @@
         return;
       }
       if (r.total > 0) $('fAmount').value = Number(r.total).toFixed(2);
-      if (r.date) $('fDate').value = r.date;
+      setDateSafely(r.date);
       if (r.merchant && !$('fDesc').value) $('fDesc').value = r.merchant;
-      if (r.category) $('fCategory').value = r.category;
+      setCategorySafely(r.category);
       if (r.notes && !$('fNotes').value) $('fNotes').value = r.notes;
+      if (!submitting) setBusy(false); // never leave the button stuck
 
       var flag = r.confidence === 'high' ? '✅' : '⚠️';
       var msg = flag + ' Read ' + (r.total > 0 ? usd(r.total) : 'no total') +
@@ -246,9 +251,55 @@
       $('scanStatus').textContent = '⚠️ ' + msg;
     }
 
+    // A date input silently blanks itself if handed anything but yyyy-mm-dd,
+    // and the field is required — so a stray format would block submitting.
+    // Normalize first, and keep the old value if the browser still refuses.
+    function setDateSafely(v) {
+      if (!v) return;
+      var s = String(v).trim();
+      var iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (iso) {
+        s = iso[1] + '-' + iso[2] + '-' + iso[3];
+      } else {
+        var d = new Date(s); // tolerate "Aug 12, 2026", "08/12/2026", etc.
+        if (isNaN(d.getTime())) return;
+        s = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) +
+            '-' + ('0' + d.getDate()).slice(-2);
+      }
+      var el = $('fDate');
+      var previous = el.value;
+      el.value = s;
+      if (!el.value) el.value = previous;
+    }
+
+    // Same trap on the category dropdown: assigning a value with no matching
+    // option leaves the select empty, and it's required too.
+    function setCategorySafely(c) {
+      if (!c) return;
+      var sel = $('fCategory');
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === c) { sel.value = c; return; }
+      }
+    }
+
+    // Returns a plain-language description of the first missing field.
+    function whatsMissing() {
+      if (!$('fDate').value) return 'a date';
+      if (!$('fCategory').value) return 'a category';
+      if (!(Number($('fAmount').value) > 0)) return 'an amount';
+      if (!$('fPaidBy').value) return 'who paid';
+      return '';
+    }
+
     // ------- add -------
     function submitExpense(ev) {
       ev.preventDefault();
+      var missing = whatsMissing();
+      if (missing) {
+        toast('⚠️ Add ' + missing + ' first');
+        $('form').reportValidity();
+        return false;
+      }
       setBusy(true);
       google.script.run.withSuccessHandler(function (data) {
         refresh(data);
