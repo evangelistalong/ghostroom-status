@@ -91,7 +91,10 @@
         <div class="full"><label>Notes (optional)</label><input type="text" id="fNotes" placeholder="confirmation #, split details…"></div>
         <div class="full">
           <label>Receipt photo / screenshot — read automatically when a key is set</label>
-          <input type="file" id="fReceipt" accept="image/*" capture="environment" onchange="pickReceipt(this)">
+          <!-- No `capture` attribute: it would force the camera and hide the
+               photo library. Without it the phone offers camera, library and
+               files, which is what you want for screenshots of bookings. -->
+          <input type="file" id="fReceipt" accept="image/*" onchange="pickReceipt(this)">
           <div id="receiptPreview" style="display:none; margin-top:8px;">
             <img id="receiptImg" alt="receipt preview" style="max-height:120px; max-width:100%; border-radius:8px; border:1px solid var(--line);">
             <button type="button" class="btn-sm red" onclick="clearReceipt()">Remove</button>

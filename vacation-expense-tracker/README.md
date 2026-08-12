@@ -23,10 +23,12 @@ which month Samit reimburses it (defaults to the month **after** the expense),
 status (Pending / Reimbursed), notes, an optional **receipt photo**, who
 entered it, and timestamps.
 
-Receipt photos: the app opens the camera on phones (or a file picker on
-desktop for screenshots), compresses the image in the browser, saves it to a
-Drive folder called **"Vacation Receipts (Samit Reimbursement)"**, and links
-it on the expense row (📎 Receipt) and in the sheet's Receipt column.
+Receipt photos: tapping the receipt field lets you take a photo *or* pick an
+existing one from your photo library or files — useful for screenshots of
+booking confirmations you already have. The image is compressed in the
+browser, saved to a Drive folder called **"Vacation Receipts (Samit
+Reimbursement)"**, and linked on the expense row (📎 Receipt) and in the
+sheet's Receipt column.
 
 **Automatic receipt reading (optional):** with an Anthropic API key set, the
 app reads each photo with Claude's vision API and pre-fills the total, date,
