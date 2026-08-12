@@ -28,8 +28,11 @@ var STATUSES = ['Pending', 'Reimbursed'];
 
 var HEADERS = [
   'ID', 'Date', 'Category', 'Description', 'Amount (USD)', 'Paid By',
-  'Reimburse Month', 'Status', 'Reimbursed On', 'Notes', 'Entered By', 'Added At'
+  'Reimburse Month', 'Status', 'Reimbursed On', 'Notes', 'Receipt',
+  'Entered By', 'Added At'
 ];
+
+var RECEIPT_FOLDER = 'Vacation Receipts (Samit Reimbursement)';
 
 // ---------------------------------------------------------------------------
 // Menu + one-time setup
@@ -62,10 +65,7 @@ function setupSpreadsheet() {
 
   // ----- Expenses tab -----
   var exp = getOrCreateSheet_(ss, SHEET_EXPENSES);
-  if (exp.getLastRow() < 1 || exp.getRange(1, 1).getValue() !== 'ID') {
-    exp.clear();
-    exp.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-  }
+  exp.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
   var head = exp.getRange(1, 1, 1, HEADERS.length);
   head.setFontWeight('bold').setBackground('#1a3c6e').setFontColor('#ffffff');
   exp.setFrozenRows(1);
@@ -99,22 +99,22 @@ function setupSpreadsheet() {
   sum.clear();
   sum.getRange('A1').setValue('OWED BY SAMIT — BY REIMBURSEMENT MONTH');
   sum.getRange('A2').setFormula(
-    '=IFERROR(QUERY(' + SHEET_EXPENSES + '!A2:L, ' +
+    '=IFERROR(QUERY(' + SHEET_EXPENSES + '!A2:M,' +
     '"select G, sum(E), count(A) where A is not null group by G order by G ' +
     'label G \'Month\', sum(E) \'Total (USD)\', count(A) \'# Expenses\'",0),"No expenses yet")');
   sum.getRange('E1').setValue('PENDING (not yet paid by Samit)');
   sum.getRange('E2').setFormula(
-    '=IFERROR(QUERY(' + SHEET_EXPENSES + '!A2:L, ' +
+    '=IFERROR(QUERY(' + SHEET_EXPENSES + '!A2:M,' +
     '"select G, sum(E) where H = \'Pending\' group by G order by G ' +
     'label G \'Month\', sum(E) \'Still Owed (USD)\'",0),"Nothing pending")');
   sum.getRange('A12').setValue('BY CATEGORY');
   sum.getRange('A13').setFormula(
-    '=IFERROR(QUERY(' + SHEET_EXPENSES + '!A2:L, ' +
+    '=IFERROR(QUERY(' + SHEET_EXPENSES + '!A2:M,' +
     '"select C, sum(E), count(A) where A is not null group by C order by sum(E) desc ' +
     'label C \'Category\', sum(E) \'Total (USD)\', count(A) \'# Expenses\'",0),"No expenses yet")');
   sum.getRange('E12').setValue('BY PAYER');
   sum.getRange('E13').setFormula(
-    '=IFERROR(QUERY(' + SHEET_EXPENSES + '!A2:L, ' +
+    '=IFERROR(QUERY(' + SHEET_EXPENSES + '!A2:M,' +
     '"select F, sum(E) where A is not null group by F ' +
     'label F \'Paid By\', sum(E) \'Total (USD)\'",0),"No expenses yet")');
   sum.getRange('A24').setValue('GRAND TOTALS');
@@ -144,7 +144,7 @@ function getOrCreateSheet_(ss, name) {
 // ---------------------------------------------------------------------------
 
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Index')
+  return HtmlService.createHtmlOutputFromFile('App')
     .setTitle('US Vacation Expenses — Samit Reimbursement')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -171,7 +171,8 @@ function getData() {
           status: r[7],
           reimbursedOn: fmtDate_(r[8], tz),
           notes: r[9],
-          enteredBy: r[10]
+          receiptUrl: String(r[10] || ''),
+          enteredBy: r[11]
         };
       });
   }
@@ -192,6 +193,10 @@ function addExpense(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var exp = ss.getSheetByName(SHEET_EXPENSES);
     var id = 'EXP-' + Utilities.formatDate(new Date(), 'UTC', 'yyMMddHHmmssSSS');
+    var receiptUrl = '';
+    if (e.receiptB64) {
+      receiptUrl = saveReceipt_(e.receiptB64, id, e.category);
+    }
     exp.appendRow([
       id,
       e.date,
@@ -203,6 +208,7 @@ function addExpense(e) {
       'Pending',
       '',
       String(e.notes || ''),
+      receiptUrl,
       String(e.enteredBy || Session.getActiveUser().getEmail() || ''),
       Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm')
     ]);
@@ -273,6 +279,35 @@ function reimburseMonth(month) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Stores a receipt photo (base64 JPEG from the web app) in a Drive folder
+ * and returns a view link. Files are link-viewable so all 3 users can open
+ * them from the app. The folder ID is cached in Script Properties.
+ */
+function saveReceipt_(b64, expenseId, category) {
+  var props = PropertiesService.getScriptProperties();
+  var folder;
+  var folderId = props.getProperty('receiptFolderId');
+  if (folderId) {
+    try {
+      folder = DriveApp.getFolderById(folderId);
+    } catch (err) {
+      folder = null; // folder was deleted; recreate below
+    }
+  }
+  if (!folder) {
+    var existing = DriveApp.getFoldersByName(RECEIPT_FOLDER);
+    folder = existing.hasNext() ? existing.next() : DriveApp.createFolder(RECEIPT_FOLDER);
+    props.setProperty('receiptFolderId', folder.getId());
+  }
+  var blob = Utilities.newBlob(
+    Utilities.base64Decode(b64), 'image/jpeg',
+    expenseId + ' - ' + category + '.jpg');
+  var file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return file.getUrl();
+}
 
 function findRowById_(sheet, id) {
   var ids = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1)).getValues();

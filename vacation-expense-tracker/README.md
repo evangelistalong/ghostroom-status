@@ -6,6 +6,13 @@ expenses that Samit reimburses monthly. Built for 3 people to use together.
 **The spreadsheet:**
 https://docs.google.com/spreadsheets/d/198cFEHC7fvbEZHlBBjXBSGdU9G5rI0t8YDkOqlKVaDI/edit
 
+> **Where does this code actually run?** This GitHub folder is just the
+> source-of-record/backup. The live copies of `Code.gs` and `App.html` live
+> inside the Apps Script project attached to the spreadsheet (Extensions →
+> Apps Script), and Google serves the app from a `script.google.com` URL.
+> It cannot be hosted on GitHub Pages — the interface talks to the sheet
+> through `google.script.run`, which only works when Google serves the page.
+
 ## What it tracks
 
 Categories: Hotels, Plane Tickets, Disney Tickets, Universal Tickets,
@@ -13,7 +20,13 @@ Restaurants / Food, Las Vegas Show Tickets, Other.
 
 Each expense records: date, category, description, amount (USD), who paid,
 which month Samit reimburses it (defaults to the month **after** the expense),
-status (Pending / Reimbursed), notes, who entered it, and timestamps.
+status (Pending / Reimbursed), notes, an optional **receipt photo**, who
+entered it, and timestamps.
+
+Receipt photos: the app opens the camera on phones (or a file picker on
+desktop for screenshots), compresses the image in the browser, saves it to a
+Drive folder called **"Vacation Receipts (Samit Reimbursement)"**, and links
+it on the expense row (📎 Receipt) and in the sheet's Receipt column.
 
 Tabs:
 - **Expenses** — the database, with dropdowns and color-coding by status
@@ -27,7 +40,7 @@ Tabs:
 2. **Extensions → Apps Script**. Delete any starter code.
 3. Create two files matching the ones in this folder:
    - Paste `Code.gs` into the default `Code.gs` file.
-   - **File → New → HTML**, name it exactly `Index`, paste in `Index.html`.
+   - **File → New → HTML**, name it exactly `App`, paste in `App.html`.
 4. Save, then run the `setupSpreadsheet` function once (select it in the
    toolbar dropdown and press ▶ Run). Approve the permissions prompt.
    This builds all three tabs, dropdowns, and the summary formulas.
@@ -44,8 +57,9 @@ Tabs:
 4. Click **Deploy** and share the web app URL with the other 2 people.
 
 Each person picks their name from the "I am" menu in the header (remembered on
-their device), then can add expenses, filter, mark individual expenses paid, or
-hit **"💸 Samit paid this month"** to clear a whole month at once.
+their device), then can add expenses with receipt photos, filter, mark
+individual expenses paid, or hit **"💸 Samit paid this month"** to clear a
+whole month at once.
 
 ## Updating the code later
 
